@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<!-- saved from url=(0129)file:///C:/Users/RODRIG~1.BSI/AppData/Local/Temp/MicrosoftEdgeDownloads/c846d93f-ea57-462c-af1b-4cf8e467c328/Joker_Jailbreak.html -->
+<html lang="pt-br"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joker Jailbreak</title>
+    <style>
+        /* Estilos gerais e da mesa */
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #0f172a;
+            overflow: hidden;
+        }
+
+        @keyframes rotate-bg {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        #game-table {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-color: #0f172a;
+            overflow: hidden;
+            transition: background-color 2s ease;
+        }
+
+        #game-table::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+            background-size: 24px 24px;
+            animation: rotate-bg 40s linear infinite;
+            transition: background-image 2s ease;
+        }
+        
+        #game-table.victory-bg {
+            background-color: #5b21b6; /* Roxo mais escuro na vitória */
+        }
+        #game-table.victory-bg::before {
+            background-image: radial-gradient(white 1px, transparent 1px);
+            animation-duration: 20s; /* Acelera a rotação na vitória */
+        }
+        
+        /* Contêineres da UI */
+        #game-title-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            color: #e2e8f0;
+            font-weight: bold;
+            line-height: 1;
+        }
+        #game-title-container .joker-text,
+        #game-title-container .jailbreak-text {
+            font-size: 2.5rem;
+        }
+        #game-title-container .jailbreak-text {
+            transform-origin: left;
+            color: #a78bfa;
+        }
+
+        #score-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 10000;
+            display: flex;
+            gap: 10px;
+        }
+        
+        #remove-container {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+        }
+
+        .score-box {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            text-align: right;
+            min-width: 120px;
+            box-sizing: border-box;
+        }
+        
+        .score-label {
+            font-size: 14px;
+            color: #94a3b8;
+            display: block;
+        }
+
+        .score-value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        #red-score { color: #ef4444; }
+        #black-score { color: #3b82f6; }
+
+        /* Área de Descarte */
+        #discard-pile {
+            position: absolute;
+            width: 100px;
+            height: 140px;
+            border: 2px dashed #94a3b8;
+            border-radius: 8px;
+        }
+        
+        /* Estilo dos botões */
+        .control-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #e2e8f0;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            transition: background-color 0.3s, transform 0.2s, opacity 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-sizing: border-box;
+        }
+
+        .control-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .control-btn:hover:not(:disabled) {
+            background-color: #334155;
+            transform: translateY(-2px);
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        #remove-btn:not(:disabled) {
+            background-color: #7c3aed; /* Cor roxa quando habilitado */
+            border-color: #a78bfa;
+        }
+        
+        #remove-btn:hover:not(:disabled) {
+             background-color: #6d28d9;
+        }
+
+        #rules-btn, #shuffle-btn {
+            font-size: 14px;
+        }
+        #rules-btn {
+            min-width: 180px;
+        }
+        #shuffle-btn {
+            min-width: 140px;
+        }
+
+
+        /* Estilos do contêiner da carta */
+        .card {
+            position: absolute;
+            width: 100px;
+            height: 140px;
+            cursor: grab;
+            perspective: 1000px;
+            user-select: none;
+            transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s ease;
+        }
+        
+        .card.immobile {
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s, box-shadow 0.3s, filter 0.5s, opacity 0.5s;
+            transform-style: preserve-3d;
+            border-radius: 8px;
+        }
+        
+        .card.selected .card-inner {
+            box-shadow: 0 0 30px 8px rgba(167, 139, 250, 0.85);
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .card.discarded .card-inner {
+            filter: grayscale(100%);
+            opacity: 0.7;
+        }
+
+
+        @keyframes joker-breathe {
+            0%   { transform: rotateY(180deg) scale(1.0) rotate(-2deg); }
+            20%  { transform: rotateY(180deg) scale(1.06) rotate(3deg); }
+            45%  { transform: rotateY(180deg) scale(0.97) rotate(-3deg); }
+            60%  { transform: rotateY(180deg) scale(1.04) rotate(1deg); }
+            80%  { transform: rotateY(180deg) scale(1.0) rotate(3deg); }
+            100% { transform: rotateY(180deg) scale(1.02) rotate(-2deg); }
+        }
+
+        .jail-joker.flipped .card-inner {
+            animation: joker-breathe 1.5s ease-in-out infinite alternate;
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            box-sizing: border-box;
+        }
+
+        .card-back {
+            background-color: #7c3aed;
+            background-image: linear-gradient(45deg, #a78bfa 25%, transparent 25%), 
+                              linear-gradient(-45deg, #a78bfa 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #a78bfa 75%), 
+                              linear-gradient(-45deg, transparent 75%, #a78bfa 75%);
+            background-size: 20px 20px;
+            border: 2px solid white;
+        }
+
+        .card-front {
+            background-color: #f8fafc;
+            transform: rotateY(180deg);
+            flex-direction: column;
+            line-height: 1;
+            border: 3px solid #d3d3d3;
+        }
+        
+        .card-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+        }
+
+        .card-suit {
+            font-size: 2.4rem;
+        }
+
+        .suit-red { color: #ef4444; }
+        .suit-black { color: #3b82f6; }
+
+        .card.dragging .card-inner {
+            cursor: grabbing;
+            box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Modal de Vitória e Regras */
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(91, 33, 182, 0.6);
+            z-index: 19000; 
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        #modal-overlay.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background-color: #1e293b;
+            color: #e2e8f0;
+            padding: 30px 40px;
+            border-radius: 16px;
+            border: 2px solid #60a5fa;
+            text-align: center;
+            z-index: 20000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+            opacity: 0;
+            transition: opacity 0.4s, transform 0.4s;
+            max-width: 600px;
+        }
+
+        .modal.show {
+            display: block;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .modal h2 {
+            margin: 0 0 20px;
+            font-size: 1.1rem;
+            color: #a78bfa;
+        }
+        
+        #win-modal h2 {
+            font-size: 1.65rem; /* 50% maior */
+        }
+
+        #rules-modal p {
+            text-align: left;
+            margin-bottom: 15px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        #rules-modal p strong {
+             color: #a78bfa;
+        }
+        
+        .disclaimer {
+            font-size: 12px;
+            font-style: italic;
+            color: #94a3b8;
+            margin-top: 30px;
+            text-align: left;
+        }
+        .disclaimer a {
+            color: #a78bfa;
+            text-decoration: none;
+        }
+        .disclaimer a:hover {
+            text-decoration: underline;
+        }
+
+        .close-modal-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #94a3b8;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.3s;
+        }
+        .close-modal-btn:hover {
+            color: #e2e8f0;
+        }
+
+        .pile-label {
+            position: absolute;
+            color: #94a3b8;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            width: 100px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div id="modal-overlay"></div>
+
+<div id="game-title-container">
+    <span class="joker-text">JOKER</span>
+    <span class="jailbreak-text" style="transform: scaleX(1);">JAILBREAK</span>
+</div>
+
+<div id="score-container">
+    <div class="score-box">
+        <span class="score-label">VERMELHAS</span>
+        <span id="red-score" class="score-value">8</span>
+    </div>
+    <div class="score-box">
+        <span class="score-label">AZUIS</span>
+        <span id="black-score" class="score-value">8</span>
+    </div>
+</div>
+
+<div id="controls">
+    <button id="rules-btn" class="control-btn">Regras do Jogo</button>
+    <button id="shuffle-btn" class="control-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+        Reiniciar
+    </button>
+</div>
+
+<div id="remove-container">
+     <button id="remove-btn" class="control-btn" style="width: 120.359px; height: 142px;">Remover</button>
+</div>
+
+
+<div id="game-table">
+    <div id="discard-pile" style="left: 1762px; top: 407px; right: auto;"></div>
+    <div id="stock-label" class="pile-label" style="left: 50px; top: 557px;">Compra</div>
+    <div id="discard-label" class="pile-label" style="left: 1762px; top: 557px;">Descarte</div>
+<div class="card immobile" data-card-id="2-paus" data-value="2" data-color="black" data-pile-id="corner-tl" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 786px; top: 247px; z-index: 0;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">2</span><span class="card-suit">♣</span></div></div></div><div class="card immobile" data-card-id="A-copas" data-value="A" data-color="red" data-pile-id="corner-tl" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 780px; top: 241px; z-index: 1;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">A</span><span class="card-suit">♥</span></div></div></div><div class="card immobile flipped" data-card-id="6-copas" data-value="6" data-color="red" data-pile-id="corner-tl" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 774px; top: 235px; z-index: 2;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">6</span><span class="card-suit">♥</span></div></div></div><div class="card immobile" data-card-id="K-espadas" data-value="K" data-color="black" data-pile-id="wall-top" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 247px; z-index: 0;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">K</span><span class="card-suit">♠</span></div></div></div><div class="card immobile" data-card-id="4-copas" data-value="4" data-color="red" data-pile-id="wall-top" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 241px; z-index: 1;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">4</span><span class="card-suit">♥</span></div></div></div><div class="card immobile" data-card-id="9-espadas" data-value="9" data-color="black" data-pile-id="wall-top" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 235px; z-index: 2;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">9</span><span class="card-suit">♠</span></div></div></div><div class="card immobile" data-card-id="10-ouros" data-value="10" data-color="red" data-pile-id="wall-top" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 229px; z-index: 3;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">10</span><span class="card-suit">♦</span></div></div></div><div class="card immobile" data-card-id="9-paus" data-value="9" data-color="black" data-pile-id="wall-top" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 223px; z-index: 4;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">9</span><span class="card-suit">♣</span></div></div></div><div class="card immobile" data-card-id="3-espadas" data-value="3" data-color="black" data-pile-id="wall-top" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 217px; z-index: 5;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">3</span><span class="card-suit">♠</span></div></div></div><div class="card immobile flipped" data-card-id="A-paus" data-value="A" data-color="black" data-pile-id="wall-top" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 211px; z-index: 6;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">A</span><span class="card-suit">♣</span></div></div></div><div class="card immobile" data-card-id="K-ouros" data-value="K" data-color="red" data-pile-id="corner-tr" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1026px; top: 247px; z-index: 0;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">K</span><span class="card-suit">♦</span></div></div></div><div class="card immobile" data-card-id="5-espadas" data-value="5" data-color="black" data-pile-id="corner-tr" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1032px; top: 241px; z-index: 1;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">5</span><span class="card-suit">♠</span></div></div></div><div class="card immobile flipped selected" data-card-id="8-espadas" data-value="8" data-color="black" data-pile-id="corner-tr" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1038px; top: 235px; z-index: 2;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">8</span><span class="card-suit">♠</span></div></div></div><div class="card immobile" data-card-id="Q-copas" data-value="Q" data-color="red" data-pile-id="wall-left" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 786px; top: 407px; z-index: 0;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">Q</span><span class="card-suit">♥</span></div></div></div><div class="card immobile" data-card-id="6-paus" data-value="6" data-color="black" data-pile-id="wall-left" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 780px; top: 407px; z-index: 1;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">6</span><span class="card-suit">♣</span></div></div></div><div class="card immobile" data-card-id="J-paus" data-value="J" data-color="black" data-pile-id="wall-left" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 774px; top: 407px; z-index: 2;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">J</span><span class="card-suit">♣</span></div></div></div><div class="card immobile" data-card-id="2-copas" data-value="2" data-color="red" data-pile-id="wall-left" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 768px; top: 407px; z-index: 3;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">2</span><span class="card-suit">♥</span></div></div></div><div class="card immobile" data-card-id="Q-paus" data-value="Q" data-color="black" data-pile-id="wall-left" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 762px; top: 407px; z-index: 4;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">Q</span><span class="card-suit">♣</span></div></div></div><div class="card immobile" data-card-id="K-copas" data-value="K" data-color="red" data-pile-id="wall-left" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 756px; top: 407px; z-index: 5;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">K</span><span class="card-suit">♥</span></div></div></div><div class="card immobile flipped" data-card-id="10-copas" data-value="10" data-color="red" data-pile-id="wall-left" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 750px; top: 407px; z-index: 6;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">10</span><span class="card-suit">♥</span></div></div></div><div class="card immobile" data-card-id="10-paus" data-value="10" data-color="black" data-pile-id="wall-right" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1026px; top: 407px; z-index: 0;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">10</span><span class="card-suit">♣</span></div></div></div><div class="card immobile" data-card-id="6-ouros" data-value="6" data-color="red" data-pile-id="wall-right" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1032px; top: 407px; z-index: 1;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">6</span><span class="card-suit">♦</span></div></div></div><div class="card immobile" data-card-id="8-copas" data-value="8" data-color="red" data-pile-id="wall-right" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1038px; top: 407px; z-index: 2;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">8</span><span class="card-suit">♥</span></div></div></div><div class="card immobile" data-card-id="A-espadas" data-value="A" data-color="black" data-pile-id="wall-right" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1044px; top: 407px; z-index: 3;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">A</span><span class="card-suit">♠</span></div></div></div><div class="card immobile" data-card-id="6-espadas" data-value="6" data-color="black" data-pile-id="wall-right" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1050px; top: 407px; z-index: 4;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">6</span><span class="card-suit">♠</span></div></div></div><div class="card immobile" data-card-id="J-ouros" data-value="J" data-color="red" data-pile-id="wall-right" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1056px; top: 407px; z-index: 5;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">J</span><span class="card-suit">♦</span></div></div></div><div class="card immobile flipped" data-card-id="Q-espadas" data-value="Q" data-color="black" data-pile-id="wall-right" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1062px; top: 407px; z-index: 6;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">Q</span><span class="card-suit">♠</span></div></div></div><div class="card immobile" data-card-id="7-espadas" data-value="7" data-color="black" data-pile-id="corner-bl" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 786px; top: 567px; z-index: 0;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">7</span><span class="card-suit">♠</span></div></div></div><div class="card immobile" data-card-id="5-ouros" data-value="5" data-color="red" data-pile-id="corner-bl" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 780px; top: 573px; z-index: 1;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">5</span><span class="card-suit">♦</span></div></div></div><div class="card immobile flipped" data-card-id="J-copas" data-value="J" data-color="red" data-pile-id="corner-bl" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 774px; top: 579px; z-index: 2;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">J</span><span class="card-suit">♥</span></div></div></div><div class="card immobile" data-card-id="3-paus" data-value="3" data-color="black" data-pile-id="wall-bottom" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 567px; z-index: 0;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">3</span><span class="card-suit">♣</span></div></div></div><div class="card immobile" data-card-id="7-paus" data-value="7" data-color="black" data-pile-id="wall-bottom" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 573px; z-index: 1;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">7</span><span class="card-suit">♣</span></div></div></div><div class="card immobile" data-card-id="J-espadas" data-value="J" data-color="black" data-pile-id="wall-bottom" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 579px; z-index: 2;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">J</span><span class="card-suit">♠</span></div></div></div><div class="card immobile" data-card-id="Q-ouros" data-value="Q" data-color="red" data-pile-id="wall-bottom" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 585px; z-index: 3;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">Q</span><span class="card-suit">♦</span></div></div></div><div class="card immobile" data-card-id="2-ouros" data-value="2" data-color="red" data-pile-id="wall-bottom" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 591px; z-index: 4;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">2</span><span class="card-suit">♦</span></div></div></div><div class="card immobile" data-card-id="3-copas" data-value="3" data-color="red" data-pile-id="wall-bottom" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 597px; z-index: 5;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">3</span><span class="card-suit">♥</span></div></div></div><div class="card immobile flipped selected" data-card-id="8-ouros" data-value="8" data-color="red" data-pile-id="wall-bottom" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 603px; z-index: 6;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">8</span><span class="card-suit">♦</span></div></div></div><div class="card immobile" data-card-id="5-copas" data-value="5" data-color="red" data-pile-id="corner-br" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1026px; top: 567px; z-index: 0;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">5</span><span class="card-suit">♥</span></div></div></div><div class="card immobile" data-card-id="7-ouros" data-value="7" data-color="red" data-pile-id="corner-br" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1032px; top: 573px; z-index: 1;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">7</span><span class="card-suit">♦</span></div></div></div><div class="card immobile flipped" data-card-id="9-copas" data-value="9" data-color="red" data-pile-id="corner-br" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 1038px; top: 579px; z-index: 2;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">9</span><span class="card-suit">♥</span></div></div></div><div class="card" data-card-id="A-ouros" data-value="A" data-color="red" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 50px; top: 407px; z-index: 10;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">A</span><span class="card-suit">♦</span></div></div></div><div class="card" data-card-id="8-paus" data-value="8" data-color="black" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 50px; top: 406.5px; z-index: 11;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">8</span><span class="card-suit">♣</span></div></div></div><div class="card" data-card-id="5-paus" data-value="5" data-color="black" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 50px; top: 406px; z-index: 12;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">5</span><span class="card-suit">♣</span></div></div></div><div class="card" data-card-id="4-paus" data-value="4" data-color="black" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 50px; top: 405.5px; z-index: 13;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">4</span><span class="card-suit">♣</span></div></div></div><div class="card" data-card-id="7-copas" data-value="7" data-color="red" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 50px; top: 405px; z-index: 14;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">7</span><span class="card-suit">♥</span></div></div></div><div class="card" data-card-id="4-ouros" data-value="4" data-color="red" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 50px; top: 404.5px; z-index: 15;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">4</span><span class="card-suit">♦</span></div></div></div><div class="card" data-card-id="10-espadas" data-value="10" data-color="black" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 50px; top: 404px; z-index: 16;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">10</span><span class="card-suit">♠</span></div></div></div><div class="card" data-card-id="K-paus" data-value="K" data-color="black" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 50px; top: 403.5px; z-index: 17;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">K</span><span class="card-suit">♣</span></div></div></div><div class="card" data-card-id="9-ouros" data-value="9" data-color="red" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 50px; top: 403px; z-index: 18;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">9</span><span class="card-suit">♦</span></div></div></div><div class="card" data-card-id="3-ouros" data-value="3" data-color="red" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 50px; top: 402.5px; z-index: 19;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-red"><span class="card-value">3</span><span class="card-suit">♦</span></div></div></div><div class="card" data-card-id="4-espadas" data-value="4" data-color="black" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 50px; top: 402px; z-index: 20;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">4</span><span class="card-suit">♠</span></div></div></div><div class="card" data-card-id="2-espadas" data-value="2" data-color="black" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 50px; top: 401.5px; z-index: 21;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front suit-black"><span class="card-value">2</span><span class="card-suit">♠</span></div></div></div><div class="card flipped jail-joker" data-card-id="JOKER-joker" data-value="JOKER" data-color="none" data-moved="true" style="transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s; left: 906px; top: 407px;"><div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front"><svg id="Camada_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 3219.5 4645.9">
+  <!-- Generator: Adobe Illustrator 29.1.0, SVG Export Plug-In . SVG Version: 2.1.0 Build 142)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #6f34d5;
+      }
+
+      .st1 {
+        fill: #ccccfa;
+      }
+    </style>
+  </defs>
+  <path class="st1" d="M2951.6,2307.2c117.7-371.5-43.6-742.1-380.9-904.9-11.3-163.1-96.8-142.8-228.7-172-297.3-90.2-208.7-234.4-21.8-389,89.9-70,267.7-8.4,218.2,108.5-24.5,29.2-28.9,72.6-9.8,102.9,65.6,102.7,225.1-7.8,131.9-105.8-32-22-12.3-56.1-.7-84.3,88.7,82.6,229.8-13.3,136.9-116.2-15.4-15.7-33.8-18.4-31.4-41.1,32.8-360.8-369.4-514-657.2-366.4-20.5,6.2-40.7,22.2-62.2,23.8-161-207.4-532.1-239.4-613.1,58.5-2.6,20.9-15.1,35.2-34.4,42.8-187.9,148.5,203.8,262.4,118.9,27,75.4-150.4,375.2-88.2,229.4,97.9.2,14.2,1.6,31.4-9.2,42.1-34.2,34-126.9,51.3-96.7,116,116.3,113.6-111.4,131.7-21.9,235.7,136.6,73.7-136.8,82.4-185.6,43.3-49.5-34.8-114.5-40.2-160.9,3.6-156.9,150.5-435.2-9.4-398-221.1,48.9-38.8,93.9-94.2,42.5-150.9,31.5-56.9,102.2-133.9,29.2-191.8-6.2-125.3-96.3-96.6-188.9-63.4-84.6,12.5-170.9,134.4-159.4,265.1-96.4,28.5-88.9,122.7-36.6,156.7-15.8,219.6,98.2,412.7,245.6,499.3,193,113.3,573.5-9.7,419.2,326.7s-56.1,275.2-8,382.2c-138.3,25.8-453.4,166.3-509.4-6.8-85.5-109.7-171.8,97.6-24.7,83,14.9,45.4,43.1,73.9,69.7,91.5-44.5-4.8-84.8-18.5-112.5-49.9-74-65.9-128.5,88.3-32.1,86.1,127.6-16.5,20.8,50.8-38.1,36.9-14.8-1.5-17.6-14.1-22.5-27.1-13.9-35.7-72-43.7-92.9-10.6-41.1,117.5,74.5,59.2,127.2,102.1-1200.4,479.3,637.9,627.4,527.3,1477.6,4,62.5-58.9,130.9-65.9,121.8-8.3-10.9,4.5-16.5,5.8-26.9,3.1-26.8.9-46.1-32.7-47.7-33.6-1.6-49.5,48.1-33.6,71s53.5,61.3,92.1,67.1h0c43,14.3,106.6-16.7,138.5-41.6,161.1-103.7,122.9-257.7,128.6-421.4,36.9-91.5,125.7-287.2-13.2-283.8-146.1,3.6-584.3-556-366-499.8,72.1.1-84,103.6,40.7,134.5,157.4-30.3-75.4-132.4,151.5-121.5,168.9-37.4-86.7,298.6,100.2,247.6,51.2-22.2,30.9-65.2,11.6-102.1,105.9-158.1,81.4-27.4,100.3,79.6-59.9,565.8,771.6,696.2,632.7,1242.5-22.5,49.9-58.7,38.1-105.7,38.9-42.2-1.3-22.2-6.4-10.9-31.8.5-110-174.4-57.9-148.9,40.4,4.8,226.8,452.2,223.4,503.7,27.7l27.1-74.8c141.3-192.7,227.6-224.8-37-360.1-136.4-191-119.9-521.1-378.7-632.2-81.7-32.4-64.5-263.1-35.8-314.4,158.2,166.5,47.8,240.3,167.3,232.5,73.3-30.5,36-98.3-20.2-121.2-56.5-209-2.9-129.8,120-37.3,38.8,176.8,198.3,27.8,76.6-21.5-67.9-7.3-75.3-117.5-97.4-171.2-18.2-60.5,111.6,82.8,272.3,88.3,15.1.3,27.3,9.4,30.5,24.6,10.1,44.4,80.6,48.6,100.4,11.6,65.9-96.6-193.8-82.1-306-297.9-15.9-21.9,19.1-14.1,30.8-14.3,37.5,2.2,48.2-10.8,77.8,21.6,39.9,33.5,106.6-5,95.4-56.9-4.3-25.3-26-47.3-51.8-49.2-137.2,26.2-426.9-340.6-426.9-340.6,119.5-29.6,285.8-192.4,399.1-397.9,215.7-148.8,507.1,180.1,403.8,375.7-46.3,5.8-60.5,49.7-54.3,89.3-10.2,35-99.4-15.1-137.7,64.5-36.8,47.8-53,121.6-15.7,172.5,27.1,24.5,69.1,21.3,88,56.9,115.6,59.1,229.2-44.2,309.4-116.6,154.6,14.8,98.9-109.1,76.2-134.1Z"></path>
+  <path class="st0" d="M2951.6,2307.2c117.7-371.5-43.6-742.1-380.9-904.9-11.3-163.1-96.8-142.8-228.7-172-297.3-90.2-208.7-234.4-21.8-389,89.9-70,267.7-8.4,218.2,108.5-24.5,29.2-28.9,72.6-9.8,102.9,65.6,102.7,225.1-7.8,131.9-105.8-32-22-12.3-56.1-.7-84.3,88.7,82.6,229.8-13.3,136.9-116.2-15.4-15.7-33.8-18.4-31.4-41.1,32.8-360.8-369.4-514-657.2-366.4-20.5,6.2-40.7,22.2-62.2,23.8-161-207.4-532.1-239.4-613.1,58.5-2.6,20.9-15.1,35.2-34.4,42.8-187.9,148.5,203.8,262.4,118.9,27,75.4-150.4,375.2-88.2,229.4,97.9.2,14.2,1.6,31.4-9.2,42.1-34.2,34-126.9,51.3-96.7,116,116.3,113.6-111.4,131.7-21.9,235.7,136.6,73.7-136.8,82.4-185.6,43.3-49.5-34.8-114.5-40.2-160.9,3.6-156.9,150.5-435.2-9.4-398-221.1,48.9-38.8,93.9-94.2,42.5-150.9,31.5-56.9,102.2-133.9,29.2-191.8-6.2-125.3-96.3-96.6-188.9-63.4-84.6,12.5-170.9,134.4-159.4,265.1-96.4,28.5-88.9,122.7-36.6,156.7-15.8,219.6,98.2,412.7,245.6,499.3,193,113.3,573.5-9.7,419.2,326.7s-56.1,275.2-8,382.2c-138.3,25.8-453.4,166.3-509.4-6.8-85.5-109.7-171.8,97.6-24.7,83,14.9,45.4,43.1,73.9,69.7,91.5-44.5-4.8-84.8-18.5-112.5-49.9-74-65.9-128.5,88.3-32.1,86.1,127.6-16.5,20.8,50.8-38.1,36.9-14.8-1.5-17.6-14.1-22.5-27.1-13.9-35.7-72-43.7-92.9-10.6-41.1,117.5,74.5,59.2,127.2,102.1-1200.4,479.3,637.9,627.4,527.3,1477.6,4,62.5-58.9,130.9-65.9,121.8-8.3-10.9,4.5-16.5,5.8-26.9,3.1-26.8.9-46.1-32.7-47.7-33.6-1.6-49.5,48.1-33.6,71s53.5,61.3,92.1,67.1h0c43,14.3,106.6-16.7,138.5-41.6,161.1-103.7,122.9-257.7,128.6-421.4,36.9-91.5,125.7-287.2-13.2-283.8-146.1,3.6-584.3-556-366-499.8,72.1.1-84,103.6,40.7,134.5,157.4-30.3-75.4-132.4,151.5-121.5,168.9-37.4-86.7,298.6,100.2,247.6,51.2-22.2,30.9-65.2,11.6-102.1,105.9-158.1,81.4-27.4,100.3,79.6-59.9,565.8,771.6,696.2,632.7,1242.5-22.5,49.9-58.7,38.1-105.7,38.9-42.2-1.3-22.2-6.4-10.9-31.8.5-110-174.4-57.9-148.9,40.4,4.8,226.8,452.2,223.4,503.7,27.7l27.1-74.8c141.3-192.7,227.6-224.8-37-360.1-136.4-191-119.9-521.1-378.7-632.2-81.7-32.4-64.5-263.1-35.8-314.4,158.2,166.5,47.8,240.3,167.3,232.5,73.3-30.5,36-98.3-20.2-121.2-56.5-209-2.9-129.8,120-37.3,38.8,176.8,198.3,27.8,76.6-21.5-67.9-7.3-75.3-117.5-97.4-171.2-18.2-60.5,111.6,82.8,272.3,88.3,15.1.3,27.3,9.4,30.5,24.6,10.1,44.4,80.6,48.6,100.4,11.6,65.9-96.6-193.8-82.1-306-297.9-15.9-21.9,19.1-14.1,30.8-14.3,37.5,2.2,48.2-10.8,77.8,21.6,39.9,33.5,106.6-5,95.4-56.9-4.3-25.3-26-47.3-51.8-49.2-137.2,26.2-426.9-340.6-426.9-340.6,119.5-29.6,285.8-192.4,399.1-397.9,215.7-148.8,507.1,180.1,403.8,375.7-46.3,5.8-60.5,49.7-54.3,89.3-10.2,35-99.4-15.1-137.7,64.5-36.8,47.8-53,121.6-15.7,172.5,27.1,24.5,69.1,21.3,88,56.9,115.6,59.1,229.2-44.2,309.4-116.6,154.6,14.8,98.9-109.1,76.2-134.1ZM908.2,721.8c-5.3,26.3-19.6-10.2-29.9-15-20-26.3,40-8.5,29.9,15ZM871.4,411.1c32-15.2,35.6,40.7,2.4,24.8-10.2-5.8-16.7-19.4-2.4-24.8ZM792.9,434.8c31.3-63.9,64.4,96,18,60-7.7-16.4-19.7-41.9-18-60ZM742.7,442.5c27.3-4.5,53.6,62.6,28.9,77.5-17.6.8-56.6-72.6-28.9-77.5ZM685.1,473.8c29.6-18.1,65.3,67.9,30.3,71.5-17.3-19.5-13.3-25.6-41.4-24.7-10.4-12.5-.9-37.2,11.1-46.8h0ZM618.2,745.3c-7.3,15.8-28.4,47.1-39,16.5-14.2-28.8,44.2-52.6,39-16.5h0ZM650.6,566.3c95.3-1-20,202.6,156.8,31.7,41.2-29.7,73.5-22.2,92-53.8,5.8-14.7-11.3-25.1-16.9-37.5-16.6-24.8-16.1-68.2,12.6-22,36.7,18.5,46.7,30.6,27,71.1-25.3,62.3-94.9,97.1-145.2,123-164,84.4-138-82.9-126.3-112.4ZM859.3,763.5c-14.5,56.4-55.9-18.4-25.1-28.8,12.5,2.1,25.2,16.2,25.1,28.8ZM767.7,796.3c-45.9,58.7-35-74.2,4.4-33.2,5.5,10,2.3,24.5-4.4,33.2h0ZM695,779.6c-3,42.9-58.9,29.9-38.6-8.6,13.1-20.5,42.6-16,38.6,8.6ZM745,861.3c-23.8,24.5-67.7,43.1-101.1,50.7,12-32.8,68.9-60.2,101.1-50.7ZM662.9,975.6c12.7-47.3,69.5-64.4,112.4-73.5,22.3,10.6-93.5,77.3-112.4,73.5ZM685.4,1041.1c21.3-44.6,59.8-73.5,108.7-80,27.8,6.9-103.5,99-108.7,80ZM714,1122.3c-13.5.7,13-25.2,15.3-31.4,113.5-154.9,107.7-22.9-15.3,31.4ZM791,1155.7c-11.1,8.4-23.7,20.3-34.7,27.5,12.4-22.6,34.9-89.6,77.8-104.4,63.8-48.2-23.2,67.7-43.1,76.9ZM848.3,1189.4c-75,86.9-12.2-30.6,10.9-56.6,26.8-18.9,1.4,51.1-10.9,56.6ZM876.5,1259.8c7.1-30.4,37.7-216.9,48.2-96.1,10,19.2-56.7,148.9-48.2,96.1ZM682.6,2054.4c-7.9,24.5-45.9,0-26.4-17.6,12.4-11.3,32.4,1.9,26.4,17.6ZM612.6,2196.9c-23,.2-20-42.7,4.9-31.9,18.1,7.1,14.2,30.8-4.9,31.9ZM515.2,2272c-14.8,8.8-30.1-5.2-19.7-20.4,9.7-16.2,37.8,12.4,19.7,20.4ZM1967.1,3087.4c40.4,2.8,2.6,63.8-16.1,27.8-4.3-11.6,2.6-27.7,16.1-27.8ZM2142.6,3013c10.4-3.1,24.3,8.2,19.5,19.3-15.9,31.3-50.8-4.3-19.5-19.3ZM2421.9,2881.3c31.6,13.6-20.4,57.1-24.2,20.1.4-11.4,12.4-23.6,24.2-20.1ZM2282.9,2583.5c9.6-30.3,53.5-4.6,31.3,17.4-15.9,17.7-41.4,5.2-31.3-17.4ZM2731.2,1991.7c-58.1-60,95-75.9,132.9-61.6-38.9,26.6-92.4,34.6-132.9,61.6h0ZM2871.1,1998.2c-28.2,2-131.4,65.7-140.4,39.1-17.8-57.6,110.6-47.1,140.4-39.1ZM2030.8,1176.6c-3-22.1,63,65.8,97.8,57.4,117.4,83.2-95.4-2.4-97.8-57.4ZM1358.9,1943.5c16-217.7,99.1-425.5,180.5-626.1,4.7-19,30.5-23.6,23.2,1.9-59.8,86.1-225.4,912.8-203.7,624.2ZM1313.5,2009.2c-1.7-272.6,81.4-554,211.5-791.5-68.5,215.2-180.6,623.8-211.5,791.5h0ZM1402.9,2024.9c13.3-228.5,109.4-555.9,217.3-708.3-61.4,237.9-154.5,469.4-203.9,711.4-2.8,32.8-15.9,26.4-13.4-3.1h0ZM1716.2,855.6c16,6.9,97.7,8,69.5,22.8-66.4,35-124.4-46.4-69.5-22.8ZM1713.8,788c21.4-10.8,92.3,24.5,62.1,49.9s-91.2-35.2-62.1-49.9ZM1810.5,730.8c15.5,39.8,140.8,46,107.4,16.3-43.8-6.3-94.4-52.6-38.6-79.7,235.5,139.1,7.7,218.9-39.6,200-32.4-12.9-81.7-120.9-29.3-136.6h0ZM1813.2,568.9c-33.4-4.8,1-30.6,19.2-25.4,52.8,8.5,96.9,40.5,140.3,68.9,46.8-3.6-90.1-81.8-112.4-81.5,30.6-91.7,277.7,127.6,274.1,213.2-35.2-39-68.2-84.9-113.1-115.5-49.4-24.4,26.1,63.6,34.9,72.9,14.5,12.2-2.9,17.5,9.6,32.4,4.7,7.4,17.9,15.4,15.7,24.5-13,16-2.6,28.5,9,40.8,7.4,12.6-15,17.7-10.1,30.9,13.9,19,15.5,20.1-3.7,34.6-4.4,10.6,8.9,20.3,13.6,27.6,6.8,17.4-43.5-5.4-20.6,30.3,21.1,41.7-61.2-18.3-22.8,43.3,8.4,25.5-67.8-14.4-47.7,25,32.3,46.2-79.7-22.6-41.8,34-8.7,16.5-67.3-24.7-49.5,15.8,2.4,20.6-33.3-9.2-40.2,0,2.6,26.2-127.9,14.9-134.3-4,353.8,22.5,431.4-385.6,79.8-467.9h0ZM2107.3,590.5c-69-31-120.8-82.2-200.2-99.4-11.2-73,227.2,54.5,200.2,99.4ZM1804.6,1352.9c-35.8-22,.4-256.4,36.1-161.6.9,93.1,44.5,89.8-36.1,161.6ZM1869.7,1388.3c-43.4,228.7-129.8,482.2-234.5,697.5,81.1-221.2,108.3-491,234.5-697.5h0ZM1841.5,1131.2c-36.3-7.9-82.8-18.6-106.2-48.1,75.9,23.9,156.1,39,236.4,40.4,20.9,12.9-114.9,16.4-130.2,7.6ZM1742.6,1142.7c24.8,7.6-12.7,48.8-5.7,67.6,21.1,2.7,28.5-63.5,53.1-48.2-7.4,32.3-7.8,78.2-37.7,99-17.3,6.2-77.3,65.6-85,45.7,11.9-59.1,20.2-129.1,75.4-164.1ZM1687,1204.4c-3.9,11.3-143.8,61.8-110.3,25,3.5-27.4,137.9-141.1,140.8-97.5-10.2,24-20.7,48.3-30.4,72.4h0ZM1667.8,1398.8c-77.7,198.8-158,492.4-213.7,650.6-14.6-60.1,167.6-800.2,213.7-650.6h0ZM1752.8,1362.9c-35.3,232.9-147.5,519-244.5,709.5,60.8-239,122.1-498.2,244.5-709.5h0ZM1758.8,1587.8c-44.1,144-127.1,419.1-194.6,484.3,26.8-99.4,337.8-1065.7,194.6-484.3ZM1700.1,3013.1c-123.3-194-115.3-447.1-111-671.1-4.3-347.6,65.4,529.9,111,671.1ZM1740.8,3118.3c-6.5,21.8-40.6,20.4-40.4-3.4,1-29.7,48.6-27.7,40.4,3.4ZM1730.5,2016.8c-13.3,27.1-25.2,55.5-41.7,80.8,88.5-203.2,130.8-468.9,221.7-682.9,24.8-1.8,19.9,28,13.2,43.3-64.6,186.4-105.2,380.9-193.2,558.9h0ZM1928.6,1365.2c-16.9-31.8-34.6-64-60.3-90.6-18.4-20.3-8.9-129.1,25.4-81.6,1.8,14.9,21,123.3,37.6,82.8,2.1-15.3-17.3-118.2,13.8-80,42.8,86.8,65.9,97.2,36.5-5.9.7-5.1,3.8-3.5,7.1,0,19.7,27.8,38.8,54.3,69,70.6,19,21.2,1.9,55.5,16.5,81.9,2,6.7,3.2,14.7-5.9,8-69.8-68.4-110.5-99.1-139.7,14.8h0ZM2544.4,780.5c-10.1,0-4.2-11,.2-15.4,10.8-8.1,16.5-24.7-2.8-19.7-8.6,1-40.9,22.3-33.6,1.2,41.2-72.5-50.3,19-22.9-40.8-11.5-16.5-62.9,39.5-33.4-23.2-16.6-18.7-64.7,56.8-44.6-9.6-1.6-7.3-12.1-2-16.6-.5-72.4,12-38.9-40.8,13-33.8,54.7-5.4,236.4,98.1,140.7,141.8ZM2576.8,784.4c38.6-24.4-10.7,46.9-29.6,29.9,2-13,21.3-20,29.6-29.9ZM2565.2,851.1c-3.1-6.5,18.2-19.4,23.1-23.4,27.3-12.3-9.8,37.3-23.1,23.4ZM2608.9,990.5c-55.8,64.2-56.6-7.8-45.8-20.3,26.1-30.3,70.3-7.9,45.8,20.3ZM2705.1,753.5c10.7-9.1,86.5,14.8,42.3,36.9-52.9,26.5-80-15.4-42.3-36.9,0,0,0,0,0,0ZM2659.4,772.2c-2.8,6.9-6,18-9.8,4.4-24.6-80.5-96.2-139.4-177.6-159.7-108.3-40.6,197.8-39.4,222,93,8.9,27.5-29.5,36.7-34.6,62.2h0ZM2648.1,533.5c52,59.9-22.9-5.6-44.1,11.3-5.4-5,1.8-19-16.5-17.5-55.1,21,10.3-34-52.9-7-30.9,13,16.7-27.2-18.9-17.6-53.3,27.2-17.8-9.4-40.4-4.8-23.8,24.7-35.4-6.3-56.7,17.5-16.5,23.9-12.3-17.2-35.6,3.5-15.4,21.6-25.1-9.3-37.4,6.8-11.3,15.5-34.9,4.7-39.8,27.6-6.5,13.4-14.7-6.8-23.6-2.4-13.3,4.7-11.4,33.5-22,37.3-25.2-38-34.9-12.7-37.3,22.1,1.7,48.2-40.2-55.5-46.5,32.6,0,33.5-17-12.8-30.1-8.3-2.3-141.7,375.9-265.4,501.9-101.1h0ZM2619,434.9c24.3,8.4-34.2,36.1-21.1,17,6.1-5.5,12.1-17.6,21.1-17ZM1966.3,446.7c178.7-94.6,503.1-199.2,645.6-15.9-8.5,4-30.7,10.8-40.9,7.5-7.1-5.4,17.9-18.5,4-22.8-89.7,31.3,21.8-41.4-72.7-1.9-41.6,13.7,17.8-32.4-6.6-31.8-18.1.8-30.3,15.4-44.7,23.4-12.7-1.7,7.4-24.5-5-27.1-27.4,4.5-38.4,47.5-40.6-7.2-15.5-7.1-26.2,38-37.7,19.1-3.5-6.6-3.9-24.6-15.2-19.3-26.5,44.3-19,3.1-49.4.7,12.7,67.5-21.5,11.4-58.1,5.9-34.3-5.8,21.1,29.7,22.7,41.9,3.6,36.8-62.7-24.6-81.7-24.6-39.8-12.8,39.4,42.2,39.6,55.9,24.1,43-140.3-66-150.6-39.4,33.6,22.2,74.9,31.6,99.3,68.3,37.7,62.5-162-78.1-148.8-39,5.4,15.9,178,102.8,94.7,98.5-34.4-39.7-153.8-92.3-153.8-92.3ZM1455.8,525.6c-7,44.1-21.5,33.2-43.2,32.2-88.8-4.4,63.4-159.7,43.2-32.2ZM1768,309.6c1.9-7.8,14.1-25.3-2.1-22-13.9-1.5-34.2,38.4-45,23.6,5.4-57.3-30.3,7.9-43.9,0-.6-30.6-22.6-6.4-33.6,3.7-7.4,3.7-10.1-9.4-17.8-7.7-17.7-.1-39,55.1-47,24.8-8.1-2.2-17.1,15.9-21.7,21.6-6.6,13.8-26.9-8.4-27.4,9.7,11.1,44.1-24.8-1.7-18.5,33,8.9,20.4,3.7,16.1-13,15.7-12.1,2.9-8.5,39-21.2,31.2,25.6-333.6,608.4-147.7,398.5-77.3-7.6-10.8,22.1-21.6,29.3-28.8,17.6-30.4-67.7,38.2-51.9-.4,43.5-34.8-14.9-16.1-31.7-1.5-15.6,4.6-2.7-18.8,2.3-23.5,12.9-23-29.5-6.2-36.8,2-7.5,8.2-22.4,11.9-18.5-4h0ZM1676,712.3c36-36.1,91.8-48.3,125.6-87,6.2-11.9,14.7-26.3,29.5-16.5,52.5,39-89.9,68.3-103.6,104.3-16,22.6,41.3,17.5,31.5,45.5-11.5,18.8-37.2-19.1-57.9-19.5s-37-10.4-25-26.8h0ZM1639.8,932.8c-.6-42.8,50.4-35.8,77.2-23.5,38,18.7,69.9-8.1,91.2-3,172.1,41.5-65.7,155.3-168.4,26.5ZM1529.6,1131.2c49.8-17.2,106.2-48.4,156.8-49.8,36.8,71.6-212.7,97.9-156.8,49.8ZM1475,1219.5c-66.4,179.2-137.2,357.3-170.2,546.5-85.4,525.3,1.3-363.6,150.4-545.7,5.4-14.2,24-22.4,19.7-.8h0ZM1448.7,1135.5c-1.2,19.6-121.4,228.2-149.4,333.2,5.9-84.2,53.5-274.3,149.4-333.2ZM959.3,1283.1c-2.2-23-5.2-242.4,26.6-130.4,4.3,16-10.3,171.2-26.6,130.4h0ZM1040,1271.4c-8.6-29-57.6-176.4,9.8-141.6-1.6,18.1,26.8,242.6-9.8,141.6ZM1131.6,1288.9c-103.4-121.9,10.8-274.6-.7-45.3-.2,13.5,6.6,33.5.7,45.3ZM1173.2,1151.8c17.1-34.4,68.9-5.4,95.4-63.3,24.9-29.2,71-78.8,107.6-38.5,16.9,24.1-35.6-10.4-47.8.8-15.7,12.3,54.4,44.8,18.7,49.3-71.4-14.7-85-9-20,36.1,34.2,37.3-67.6,6.5-82.9,3.7-20.3,27.1,57.7,51,64.2,69.7-8.2,32.8-118.7-39.4-86.5,18.5,16,22.7,46.9,26.2,67.3,42.5-63.1,48.3-135.8-48-116-118.7h0ZM941.1,2192.9c-35.2,2.1-76.9,7.3-118.9,8.9-25.1-11-53.5-35.2-75.8-56.9,176.2,43.9,589.6-102.3,495-24.2-82.7,15.5-451.4,363.3-224.5,184.3,90-53.9,194.2-168.6,292.2-173.1-169.1,127-347.3,253.9-506.2,391.1,59.2-172,212.7-301.7,366.6-390.8-161.6,63.1-385.9,243.3-549.7,167.1,94.6-25.6,270.4-59.2,321.2-106.3h0ZM847,2776.1c-25.4,7.6-35.6-40.6-7.6-40.7,24.2-.2,29.9,33.5,7.6,40.7ZM814.8,2704.4c-7.6,36.2-53.1-7.4-73.5-11.4-27-11.1,75.4-.8,73.5,11.4ZM608.2,2379.6c68.7,17.4,119.7,93.8,124,158.9-18.4-23.8-36.6-59.1-58-73.8-19.2-13.1-127.4-87.8-66-85.1ZM624.5,2453.8c86,161.1-25,43.4-42.1,11-11-22.6-51-34.6-55.4-57.9,20.2-28.1,84.8,23,97.5,46.9ZM472.3,2425.6c50.1-32.1,92.6,57.5,111.9,87.2s58.8,73.9,38,75.6c-22.9-49.9-159.7-125.4-149.8-162.9h0ZM558.2,2584.4c-35.7-54.2-141.6-61.8-152.7-127.2,50.8-77.4,191.1,166.6,152.7,127.2ZM459.3,2542.9c5.6,10.7,71.8,45,52.5,47.4-56.4-17.8-148.1-39.8-168.9-97.3,43.2-48.8,83.5,18.9,116.4,49.9h0ZM529.1,2918c18-24,63.6-42.7,63.2-76.6-18.5-1.9-131.2,54.7-126.7,36.9,32.3-17.3,60.6-41.1,77.1-74.8,22.5-36.9-147.7,72.7-140.5,47.6,19.2-4.9,121.5-85.9,97.4-98.1-14.3,7.8-158.1,83.3-132,52.9,26.5-10.9,49.9-26.3,66.4-50.3,51.2-65.8-136.7,44-117.3,7.9,24-10.1,42.9-28.6,63-44.6,53.5-47.5-156.3,44.9-97.8-4.3,18.1-17.8,87-34.9,86.5-50.8-22.5-8.1-129.5,35.3-117.7-.2,14.7-28,54.8-24.6,81.9-28.6,4.8-17.7-113.8-2.4-70.5-53.9,18.8-28.2,57.1,10.9,81.3,13.8,1-28.4-93-33.4-40.2-70.3,9.6-9.9,16-16.6,29.3-10.3,58,38.7,106.4,92.8,174,118.3,28.3,30.6-43.8,9.4-54.8,20.4,12.1,19.1,39.7,25.8,57.4,39,14.8,18-109.3-16.4-48.4,12.3,60,30,78.4-14.8,104.5,53.5,24.3,2.2,17.2-74.1,37.7-34.8,19.5,19.9-51.9,102-10.2,70.3,25-18.6,43.6-45.8,60.1-69.9,20.8,20.3-48.1,109.7-14.8,93.3,17.6-12.2,35.1-25.3,50.7-40.1,40.2,37.9-105.2,142.8-159.6,141.2h0ZM586.3,2949.3c54.9-39.5,90-101.3,148.3-138.4,5.4-5.5,13.3-11.8,11.9,1.4-13.8,79-86.5,131-161.5,146.3-9.3,0-3-6.6,1.3-9.3ZM777,2868.9c39-29.1-4.8,56.9-17.8,66.7-32.7,42.6-90.5,68.1-143,70.8,49.9-46,104.5-95.9,160.9-137.4h0ZM713.2,3018.8c186.2-212.3,151.5.4-31.3,26.5-4-9.1,24.9-17.9,31.3-26.5ZM873.8,2966.5c50.6-27.9-40.8,121.1-136.9,124.4,25.3-35.2,89.7-91.9,136.9-124.4h0ZM1155.9,3310.2c-86,120.6-29.5,61.4,62.4,26,64.6-19.1-194.5,129.8-1.2,58.8,43.8-6.2-60.5,38-61,52,1.1,15.2,89.7-16.7,99.4-10.9-136.6,72-65.5,39.1,15.8,46.1-20-.6-147,50.6-66.3,45.4,12.6.2,57.5-16.5,57-2.3-95.4,28.6-96.3,51.6,4.6,38.1,28,5.6-54,19.4-62.9,24.8-33.6,25.1,56.3,7.2,68,15.7-78.9,27.2-119.6,33.2-2.1,41.2,13.7,7.1-126.4,21.9-61.4,38.1,19.2.8,40.1-2,57.3,3.1,10.2,13.2-61.3,11-71.2,23.8-12.3,21.7,64.4,1.6,75.2,15.5,2.8,3.6-13.8,1.6-15.6,1.6-48-3.4,6.5,24.5,17.2,37.3-94.4-12.5-96.3-12.8-9.7,40.8,34.2,30.5-74.1-16.3-64.2,10.2,54.8,32,74.6,41.3-3.8,32.4-3.8,17.4,60.2,47.4,1.5,38-25.1,4-14.5,43.3-44.9,48.9-49.3,26,34.3-57.2-1.6-91.5-13.5-20.7,64.1-264.3-62.2-451.2-40.4-59.7-68.3-77.9,39.8-121.2-63.3,85-84.1,99.1,30.1,39.3h0ZM1091,3232.4c14.7,9-49.8,89.5-69.8,82.7-40.3-23.9,58.4-58.1,69.8-82.7ZM976,3263.1c22.9-25.9,54.6-51.8,84.1-71.3,1.7,24.3-72.4,122.3-84.1,71.3h0ZM936.9,3226.8c26.6-21.9,51.8-48.1,79.8-67.2,15.8,24-98.9,112.8-79.8,67.2ZM889.7,3202c12.8-33.3,55.7-58.6,83.4-82.4,58.4-42.1-49.4,101.5-83.4,82.4ZM841.3,3160.4c33.5-36.6,73.7-68.7,113.1-98,10.5,36.9-91.9,122.1-113.1,98ZM800.7,3130.6c-21.5,1,16.6-21.5,19.3-27.4,18.4-28.1,40.3-57.7,74.1-67.2,82.2-73.6-18.7,97.6-93.5,94.6h0ZM964.4,2588.2c-101.3,137-121.3,178.2-40.5-14.8,86.8-155.4,287.9-389.9,444.7-420.2-104.6,173-259,299.4-404.3,435.1h0ZM988.8,2833.5c-3.8-17.8,30.8-31.3,32.9-9.3,1.4,18.7-28.7,33.7-32.9,9.3ZM1256.2,2966.2c-1.6,24.1-32.7,18.7-35.7-1.3-1.9-23.1,38.2-21.7,35.7,1.3ZM1233.3,2561.8c-68.6,58.7-144.5,110.4-199.7,182.8,55.5-191.3,235.2-406.3,374.9-574,68.7-24.4-125.8,376.9-175.2,391.3ZM1357.4,2714.9c-279.6,516.5,156.5-711.5,79.1-354.7-4.9,31.3-23.3,138.1-22,168.3,15.2-20.2,88.5-349.3,112-339.3,27.4,202.7,31,425.9-12,628.7-94.1,398.4-24.5-369.9-14.1-461.4-33.9,143-68.1,230.4-143.1,358.5h0ZM1510.3,3042c.8,28.8-50.2,27.8-41.2-3,6.8-19.4,40.6-19.8,41.2,3ZM1606.7,3129.1c-27.2,18.9-148,78.7-174.4,53.1-.3-7.8,8.6-10,14.9-11.2h0M1458.3,3222.5c58.1-27.5,220.5-59.4,207.5-43.4-26.5,23.4-191,77.4-222,55-1.9-7.8,8.3-10.5,14.5-11.6h0ZM1459.2,3274.3c53.2-24,222.8-72.9,261.9-74.8,13.6,8.2-271.4,121.4-261.9,74.8h0ZM1493.9,3335.4c-35.3-22.3,197.9-94.6,209.4-80.1,32-8.4-185.9,94.6-209.4,80.1ZM1524.5,3377.2c46.2-33.4,127.1-73.1,176.6-75.9-10,39.3-134.3,94.9-176.6,75.9ZM1701.5,3355.6c-4.5,30.4-86.5,64.5-119.5,61.7-32.5-6.8,128.5-87.2,119.5-61.7ZM1615.2,3462.8c14.2-36.8,133.5-92.2,167.7-96.1,10.5,20.3-136.6,106.5-167.7,96.1ZM1659.5,3504.3c12.3-38.6,121.1-80.3,160.9-84.1,5.7,13.9-144.5,95.8-160.9,84.1ZM2109.6,4165.2c-32.2,13.4,23,15.8,31.8,21.4,4.7,15.5-56.7.4-46.9,23.1,5.4,4.2,69.1,17.6,46.2,25.1-59.1-.9-85.1,6.6-11.7,30.8,14.3,15.9-29.9,9.2-39.1,9.2-65-.1,33.8,23.9,31.6,35.8-14.4,8.8-34.6-.5-50.5-2.5-49.7-2.4,53.9,39.9,22.3,45.3-41.1-8-106.3-45.8-43.1,21.9,10.6,29.3-70.9-47.1-67-16.2,3.3,7.9,18.9,28,1.9,28.5-15.6,1.5-48.2-44.4-48.2-13.1.7,27.6-30.7,8.4-51.6,5.1-79.7,21.2-161.2-133.8-70.6-149.4-25.5,226.5,301.5,61.8,274.2-108.6,13.1-21.8,76.6-4.3,100.6-3.4-18.5,12.9-81.3-.7-83.9,23.9,47.1,12.6,74.2,16.5,3.9,23.1ZM2085.6,4078.5c14.6-22.5,99.5-46.7,131.6-28.2-12.4,7.8-132.2,44.5-131.6,28.2ZM2077.9,4030.8c25.2-20.1,58-27.1,96.6-16.9-4,8.7-105.1,40.6-96.6,16.9ZM2057.4,3992.1c-6.3-25.1,83.8-50.1,90.4-34.8-14.1,15.9-68.5,38-90.4,34.8ZM2028.9,3946.9c7.8-29.7,69.8-48,101.9-39.6-9.6,13.3-82,51.8-101.9,39.6h0ZM2002.9,3897.2c21.8-24.4,80.1-53.1,99.6-43.9-4,15.7-127.8,73.2-99.6,43.9h0ZM1981.5,3850.1c18.3-24.1,72.6-42,88.5-29.8-7.4,25.5-136.5,55.8-88.5,29.8ZM1930.6,3809.3c22.4-29.6,86.5-47.4,120-41.3-16.7,15.5-109.8,61.3-120,41.3ZM2030.7,3706.6c-10.4,16.9-130.6,74.6-135.5,54.4,31.2-29.2,102.8-60.4,135.5-54.4ZM1868.5,3716.7c13.9-41.1,117.2-71.3,142.3-49.8-9.3,11.8-129.9,53.8-142.3,49.8ZM1832.6,3663.4c27.1-23.8,108.4-64.5,141.8-51.7-7.1,13.7-142.8,71.8-141.8,51.7ZM1797.7,3627.1c14.3-34.9,105.9-74.9,142-72.5,7.8,28.6-128.9,95.2-142,72.5ZM1915.5,3494.8c14.2,34.2-154,119.8-169,89.4,37.6-35.4,123.5-78.8,169-89.4ZM1895.2,3443.2c11.4,26.1-184.3,130.9-190.2,96.3,26.6-35.1,155.5-98.4,190.2-96.3ZM2206.6,2747.3c259.4,246.8-126.2-15.7-174.8-156.1-23.8-41.9,16.7-53.3,174.8,156.1ZM2227.7,2576.4c-108.1,3.4-221.1-145.9-279.1-250.5,95.1,80.3,171.5,183.9,279.1,250.5ZM2001.6,2781.1c-77-38.9-207.3-333-177-455.8,43.3,85.1,147,364.2,177,455.8ZM1886.3,2951.1c-175.4-234.7-148.9-564.3-151.2-642.4,46.3,161.1,100.2,482.1,151.2,642.5h0ZM1850.2,1882.9c-167.5,474.7,50.2-313.8,145.7-484.5,12.3-16.7,22.4.4,13.6,13.9-68.8,151.1-99.4,316.1-159.3,470.6h0ZM2053.2,1412.7c4.8-10.5,55.4-38.5,53.2-20.4-85.7,125.1-113.5,275.4-166.5,415.1-119.8,336,50.3-273,113.3-394.7h0ZM1974.7,1858c64.6-163.9,75.8-370.3,220.3-488.1,4.9-3.9,17.6-11.7,11.9.4-53,80.4-100.4,165.1-136.7,254.5-33.9,75.9-58,160.9-95.5,233.2h0ZM2230.9,1633.3c-61.7,12.2-119.2-64.7-60.2-99,21.5,31.9,69.8,55.6,60.2,99ZM2267.3,1431c33.5,9,71.7,86,10.6,67.4-13.6.2-61.6-31.2-60.8-10,87.6,81.1,17,88.2-45.8,36.7,103.5-394.1,458.7-183.9,204.2-211.8,29.4,4.5,65.1,71.9,13.4,59.6-12.1-6.1-99.2-20.9-66.8,3.5,37.7,16.6,63.9,83.8-1.5,56.6-11.7-5.8-83.3-26.2-53.2-2h0ZM2346.2,1608.8c12.3-47.1,90.5-130.8,131.4-114.7-47.2,33.9-87.2,78.6-131.4,114.7ZM2457.5,1609.2c-104.5,121.7-5.6-98.8,74.9-92.7,53.4-4-67.7,75.9-74.9,92.7ZM2503.8,1679.2c-49.7,72.8-20.4-102.2,113.1-112.9,32.5,2.1-106.7,85.3-113.1,112.9ZM2566.6,1732.2c-29.1,35.3-15.4-22.6-12.8-39.3-3.9-48.1,149.6-92.9,122.1-61.1-38.1,31.7-82.4,57.6-109.3,100.4h0ZM2623.5,1723.5c-.8-27.7,136.8-68.2,117.9-41.6-40.8,32-92.3,53.4-105.8,106.8-40.3,2.6-25.1-42.9-12.1-65.2ZM2668.2,1831.7c-21-31.5,32.2-92.7,72.9-95.8,13.4-3,78.3-26.8,74.2-8.3-51.4,30.8-112.2,53.1-147.2,104.1h0ZM2826,1803.5c-48.6,21.3-93.4,49.5-131.9,85.5-32.4-84.7,180.7-119.9,131.9-85.5ZM2850.9,1863c-44.6,25.9-95.6,51.3-142.5,68.4-27-52.5,139.3-87.3,142.5-68.4ZM2702.7,2220.7c29,8-3.2,51.9-19.3,55.8-26.1-11.9-9.3-60.6,19.3-55.8ZM2763.1,2409.9c-40.5,78-142.6,90.5-217.7,62.7-14.7-7.8-51.8,6.3-45.3-21.7,1.9-27.6,127.7-30.2,100.1-83.4-55.1-37.5-124.4,87-99.8,19.2,38.8-109.5,173.6-80.1,229.9-5.4,15.1,8.4,52.4,2.1,32.9,28.6h0ZM2787.1,2306.3c-12.6,27.6-68.4,44.4-60.3-2.2,7.6-33.8,68.8-40.9,60.3,2.2ZM2782.4,2147.6c-49.1,19.1-45.4-31.7-25.8-36.6,71.2,2.2,160.6,27.8,25.8,36.6ZM2758.4,2206.8c-31.1-57.9,36-38.4,69.1-27.4,56.6,8.6-55.1,37.3-69.1,27.4ZM2816.4,2381c-14.4-18.7-.1-48.6,18.6-59.8,37.8-12.5,37.5,80.4-18.6,59.8ZM2754.4,2099c-20,10.4-16.3-19.7-18.1-30.8,8-27.9,123.4-13.3,138.6,1.4-38.6,13.4-83.3,10.8-120.5,29.5ZM2908.6,2403.2c-17.7-7.4-.8-32.4-1.4-46.5,9.1-55.3,57.6,51.1,1.4,46.5Z"></path>
+</svg></div></div></div><div id="stock-click-area" style="position: absolute; left: 50px; top: 407px; width: 100px; height: 140px; cursor: pointer; z-index: 9999;"></div></div>
+
+<div id="win-modal" class="modal">
+    <h2>Vitória!</h2>
+    <p>O Coringa escapou!</p>
+</div>
+
+<div id="rules-modal" class="modal">
+    <span id="close-rules-x-btn" class="close-modal-btn">×</span>
+    <h2>Como Jogar</h2>
+    <p><strong>O Objetivo:</strong> Sua missão é libertar o Coringa! Para fazer isso, você precisa limpar completamente uma das quatro paredes de cartas (de cima, de baixo, da esquerda ou da direita).</p>
+    <p><strong>A Jogada:</strong> O segredo é combinar cartas. Selecione cartas viradas para cima. Quando a soma das cartas vermelhas for igual à das azuis, o botão "Remover" fica ativo e você pode descartá-las.</p>
+    <p><strong>Comprando cartas-chave:</strong> Se precisar de uma ajuda, clique no baralho de compras para colocar uma carta em cima do Coringa (até 3 no máximo). Mas atenção: para vencer, todas as cartas compradas devem ser removidas!</p>
+    <p><strong>Vitória:</strong> Quando uma parede inteira for eliminada e não houver mais cartas sobre o Coringa, você vence! As pilhas dos cantos não contam para a vitória, elas são apenas obstáculos.</p>
+    <p class="disclaimer">
+        Este jogo é uma adaptação de "Joker Jailbreak", criado por Ramon Huiskamp (roofkat). A versão original é jogada com um baralho comum, provando que grandes jogos podem surgir de ideias simples. <a href="https://www.youtube.com/watch?v=CJHrj3WXCt4" target="_blank">Confira o vídeo original no YouTube!</a>
+    </p>
+</div>
+
+<script>
+    // --- Elementos do DOM ---
+    const gameTable = document.getElementById('game-table');
+    const shuffleBtn = document.getElementById('shuffle-btn');
+    const removeBtn = document.getElementById('remove-btn');
+    const redScoreEl = document.getElementById('red-score');
+    const blackScoreEl = document.getElementById('black-score');
+    const discardPileEl = document.getElementById('discard-pile');
+    const winModal = document.getElementById('win-modal');
+    const rulesModal = document.getElementById('rules-modal');
+    const rulesBtn = document.getElementById('rules-btn');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const closeRulesXBtn = document.getElementById('close-rules-x-btn');
+    const stockLabel = document.getElementById('stock-label');
+    const discardLabel = document.getElementById('discard-label');
+    const scoreContainer = document.getElementById('score-container');
+
+    // --- Constantes do Jogo ---
+    const getDeckStartY = () => (window.innerHeight / 2) - 70;
+    const STACK_OFFSET_Y = 0.5;
+    const PILE_STACK_OFFSET = 6;
+    const MAX_JOKER_STACK = 3;
+    const HORIZONTAL_PADDING = 50; // Espaçamento das bordas laterais
+
+    const suits = [
+        { name: 'espadas', symbol: '♠', color: 'black' },
+        { name: 'paus', symbol: '♣', color: 'black' },
+        { name: 'ouros', symbol: '♦', color: 'red' },
+        { name: 'copas', symbol: '♥', color: 'red' }
+    ];
+    const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    
+    // --- Estado do Jogo ---
+    let currentGameMode = 'jailbreak';
+    let zIndexCounter = 1;
+    let discardCounter = 0;
+
+    const fullDeckData = [];
+    suits.forEach(suit => {
+        values.forEach(value => {
+            fullDeckData.push({ suit, value });
+        });
+    });
+    fullDeckData.push({ value: 'JOKER', suit: { name: 'joker' } });
+    fullDeckData.push({ value: 'JOKER', suit: { name: 'joker' } });
+
+    // --- Funções Utilitárias ---
+    function getCardValue(value) {
+        if (value === 'J') return 11;
+        if (value === 'Q') return 12;
+        if (value === 'K') return 13;
+        if (value === 'A') return 1;
+        if (value === 'JOKER') return 0;
+        return parseInt(value, 10);
+    }
+
+    // --- Funções de Criação e Manipulação de Cartas ---
+    function createCardElement(cardData) {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.cardId = `${cardData.value}-${cardData.suit.name}`;
+        card.dataset.value = cardData.value;
+        card.dataset.color = cardData.suit.color || 'none';
+
+        const cardInner = document.createElement('div');
+        cardInner.classList.add('card-inner');
+
+        const cardBack = document.createElement('div');
+        cardBack.classList.add('card-face', 'card-back');
+
+        const cardFront = document.createElement('div');
+        cardFront.classList.add('card-face', 'card-front');
+        
+        if (cardData.value === 'JOKER') {
+            const jokerSVG = `<svg id="Camada_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 3219.5 4645.9">
+  <!-- Generator: Adobe Illustrator 29.1.0, SVG Export Plug-In . SVG Version: 2.1.0 Build 142)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #6f34d5;
+      }
+
+      .st1 {
+        fill: #ccccfa;
+      }
+    </style>
+  </defs>
+  <path class="st1" d="M2951.6,2307.2c117.7-371.5-43.6-742.1-380.9-904.9-11.3-163.1-96.8-142.8-228.7-172-297.3-90.2-208.7-234.4-21.8-389,89.9-70,267.7-8.4,218.2,108.5-24.5,29.2-28.9,72.6-9.8,102.9,65.6,102.7,225.1-7.8,131.9-105.8-32-22-12.3-56.1-.7-84.3,88.7,82.6,229.8-13.3,136.9-116.2-15.4-15.7-33.8-18.4-31.4-41.1,32.8-360.8-369.4-514-657.2-366.4-20.5,6.2-40.7,22.2-62.2,23.8-161-207.4-532.1-239.4-613.1,58.5-2.6,20.9-15.1,35.2-34.4,42.8-187.9,148.5,203.8,262.4,118.9,27,75.4-150.4,375.2-88.2,229.4,97.9.2,14.2,1.6,31.4-9.2,42.1-34.2,34-126.9,51.3-96.7,116,116.3,113.6-111.4,131.7-21.9,235.7,136.6,73.7-136.8,82.4-185.6,43.3-49.5-34.8-114.5-40.2-160.9,3.6-156.9,150.5-435.2-9.4-398-221.1,48.9-38.8,93.9-94.2,42.5-150.9,31.5-56.9,102.2-133.9,29.2-191.8-6.2-125.3-96.3-96.6-188.9-63.4-84.6,12.5-170.9,134.4-159.4,265.1-96.4,28.5-88.9,122.7-36.6,156.7-15.8,219.6,98.2,412.7,245.6,499.3,193,113.3,573.5-9.7,419.2,326.7s-56.1,275.2-8,382.2c-138.3,25.8-453.4,166.3-509.4-6.8-85.5-109.7-171.8,97.6-24.7,83,14.9,45.4,43.1,73.9,69.7,91.5-44.5-4.8-84.8-18.5-112.5-49.9-74-65.9-128.5,88.3-32.1,86.1,127.6-16.5,20.8,50.8-38.1,36.9-14.8-1.5-17.6-14.1-22.5-27.1-13.9-35.7-72-43.7-92.9-10.6-41.1,117.5,74.5,59.2,127.2,102.1-1200.4,479.3,637.9,627.4,527.3,1477.6,4,62.5-58.9,130.9-65.9,121.8-8.3-10.9,4.5-16.5,5.8-26.9,3.1-26.8.9-46.1-32.7-47.7-33.6-1.6-49.5,48.1-33.6,71s53.5,61.3,92.1,67.1h0c43,14.3,106.6-16.7,138.5-41.6,161.1-103.7,122.9-257.7,128.6-421.4,36.9-91.5,125.7-287.2-13.2-283.8-146.1,3.6-584.3-556-366-499.8,72.1.1-84,103.6,40.7,134.5,157.4-30.3-75.4-132.4,151.5-121.5,168.9-37.4-86.7,298.6,100.2,247.6,51.2-22.2,30.9-65.2,11.6-102.1,105.9-158.1,81.4-27.4,100.3,79.6-59.9,565.8,771.6,696.2,632.7,1242.5-22.5,49.9-58.7,38.1-105.7,38.9-42.2-1.3-22.2-6.4-10.9-31.8.5-110-174.4-57.9-148.9,40.4,4.8,226.8,452.2,223.4,503.7,27.7l27.1-74.8c141.3-192.7,227.6-224.8-37-360.1-136.4-191-119.9-521.1-378.7-632.2-81.7-32.4-64.5-263.1-35.8-314.4,158.2,166.5,47.8,240.3,167.3,232.5,73.3-30.5,36-98.3-20.2-121.2-56.5-209-2.9-129.8,120-37.3,38.8,176.8,198.3,27.8,76.6-21.5-67.9-7.3-75.3-117.5-97.4-171.2-18.2-60.5,111.6,82.8,272.3,88.3,15.1.3,27.3,9.4,30.5,24.6,10.1,44.4,80.6,48.6,100.4,11.6,65.9-96.6-193.8-82.1-306-297.9-15.9-21.9,19.1-14.1,30.8-14.3,37.5,2.2,48.2-10.8,77.8,21.6,39.9,33.5,106.6-5,95.4-56.9-4.3-25.3-26-47.3-51.8-49.2-137.2,26.2-426.9-340.6-426.9-340.6,119.5-29.6,285.8-192.4,399.1-397.9,215.7-148.8,507.1,180.1,403.8,375.7-46.3,5.8-60.5,49.7-54.3,89.3-10.2,35-99.4-15.1-137.7,64.5-36.8,47.8-53,121.6-15.7,172.5,27.1,24.5,69.1,21.3,88,56.9,115.6,59.1,229.2-44.2,309.4-116.6,154.6,14.8,98.9-109.1,76.2-134.1Z"/>
+  <path class="st0" d="M2951.6,2307.2c117.7-371.5-43.6-742.1-380.9-904.9-11.3-163.1-96.8-142.8-228.7-172-297.3-90.2-208.7-234.4-21.8-389,89.9-70,267.7-8.4,218.2,108.5-24.5,29.2-28.9,72.6-9.8,102.9,65.6,102.7,225.1-7.8,131.9-105.8-32-22-12.3-56.1-.7-84.3,88.7,82.6,229.8-13.3,136.9-116.2-15.4-15.7-33.8-18.4-31.4-41.1,32.8-360.8-369.4-514-657.2-366.4-20.5,6.2-40.7,22.2-62.2,23.8-161-207.4-532.1-239.4-613.1,58.5-2.6,20.9-15.1,35.2-34.4,42.8-187.9,148.5,203.8,262.4,118.9,27,75.4-150.4,375.2-88.2,229.4,97.9.2,14.2,1.6,31.4-9.2,42.1-34.2,34-126.9,51.3-96.7,116,116.3,113.6-111.4,131.7-21.9,235.7,136.6,73.7-136.8,82.4-185.6,43.3-49.5-34.8-114.5-40.2-160.9,3.6-156.9,150.5-435.2-9.4-398-221.1,48.9-38.8,93.9-94.2,42.5-150.9,31.5-56.9,102.2-133.9,29.2-191.8-6.2-125.3-96.3-96.6-188.9-63.4-84.6,12.5-170.9,134.4-159.4,265.1-96.4,28.5-88.9,122.7-36.6,156.7-15.8,219.6,98.2,412.7,245.6,499.3,193,113.3,573.5-9.7,419.2,326.7s-56.1,275.2-8,382.2c-138.3,25.8-453.4,166.3-509.4-6.8-85.5-109.7-171.8,97.6-24.7,83,14.9,45.4,43.1,73.9,69.7,91.5-44.5-4.8-84.8-18.5-112.5-49.9-74-65.9-128.5,88.3-32.1,86.1,127.6-16.5,20.8,50.8-38.1,36.9-14.8-1.5-17.6-14.1-22.5-27.1-13.9-35.7-72-43.7-92.9-10.6-41.1,117.5,74.5,59.2,127.2,102.1-1200.4,479.3,637.9,627.4,527.3,1477.6,4,62.5-58.9,130.9-65.9,121.8-8.3-10.9,4.5-16.5,5.8-26.9,3.1-26.8.9-46.1-32.7-47.7-33.6-1.6-49.5,48.1-33.6,71s53.5,61.3,92.1,67.1h0c43,14.3,106.6-16.7,138.5-41.6,161.1-103.7,122.9-257.7,128.6-421.4,36.9-91.5,125.7-287.2-13.2-283.8-146.1,3.6-584.3-556-366-499.8,72.1.1-84,103.6,40.7,134.5,157.4-30.3-75.4-132.4,151.5-121.5,168.9-37.4-86.7,298.6,100.2,247.6,51.2-22.2,30.9-65.2,11.6-102.1,105.9-158.1,81.4-27.4,100.3,79.6-59.9,565.8,771.6,696.2,632.7,1242.5-22.5,49.9-58.7,38.1-105.7,38.9-42.2-1.3-22.2-6.4-10.9-31.8.5-110-174.4-57.9-148.9,40.4,4.8,226.8,452.2,223.4,503.7,27.7l27.1-74.8c141.3-192.7,227.6-224.8-37-360.1-136.4-191-119.9-521.1-378.7-632.2-81.7-32.4-64.5-263.1-35.8-314.4,158.2,166.5,47.8,240.3,167.3,232.5,73.3-30.5,36-98.3-20.2-121.2-56.5-209-2.9-129.8,120-37.3,38.8,176.8,198.3,27.8,76.6-21.5-67.9-7.3-75.3-117.5-97.4-171.2-18.2-60.5,111.6,82.8,272.3,88.3,15.1.3,27.3,9.4,30.5,24.6,10.1,44.4,80.6,48.6,100.4,11.6,65.9-96.6-193.8-82.1-306-297.9-15.9-21.9,19.1-14.1,30.8-14.3,37.5,2.2,48.2-10.8,77.8,21.6,39.9,33.5,106.6-5,95.4-56.9-4.3-25.3-26-47.3-51.8-49.2-137.2,26.2-426.9-340.6-426.9-340.6,119.5-29.6,285.8-192.4,399.1-397.9,215.7-148.8,507.1,180.1,403.8,375.7-46.3,5.8-60.5,49.7-54.3,89.3-10.2,35-99.4-15.1-137.7,64.5-36.8,47.8-53,121.6-15.7,172.5,27.1,24.5,69.1,21.3,88,56.9,115.6,59.1,229.2-44.2,309.4-116.6,154.6,14.8,98.9-109.1,76.2-134.1ZM908.2,721.8c-5.3,26.3-19.6-10.2-29.9-15-20-26.3,40-8.5,29.9,15ZM871.4,411.1c32-15.2,35.6,40.7,2.4,24.8-10.2-5.8-16.7-19.4-2.4-24.8ZM792.9,434.8c31.3-63.9,64.4,96,18,60-7.7-16.4-19.7-41.9-18-60ZM742.7,442.5c27.3-4.5,53.6,62.6,28.9,77.5-17.6.8-56.6-72.6-28.9-77.5ZM685.1,473.8c29.6-18.1,65.3,67.9,30.3,71.5-17.3-19.5-13.3-25.6-41.4-24.7-10.4-12.5-.9-37.2,11.1-46.8h0ZM618.2,745.3c-7.3,15.8-28.4,47.1-39,16.5-14.2-28.8,44.2-52.6,39-16.5h0ZM650.6,566.3c95.3-1-20,202.6,156.8,31.7,41.2-29.7,73.5-22.2,92-53.8,5.8-14.7-11.3-25.1-16.9-37.5-16.6-24.8-16.1-68.2,12.6-22,36.7,18.5,46.7,30.6,27,71.1-25.3,62.3-94.9,97.1-145.2,123-164,84.4-138-82.9-126.3-112.4ZM859.3,763.5c-14.5,56.4-55.9-18.4-25.1-28.8,12.5,2.1,25.2,16.2,25.1,28.8ZM767.7,796.3c-45.9,58.7-35-74.2,4.4-33.2,5.5,10,2.3,24.5-4.4,33.2h0ZM695,779.6c-3,42.9-58.9,29.9-38.6-8.6,13.1-20.5,42.6-16,38.6,8.6ZM745,861.3c-23.8,24.5-67.7,43.1-101.1,50.7,12-32.8,68.9-60.2,101.1-50.7ZM662.9,975.6c12.7-47.3,69.5-64.4,112.4-73.5,22.3,10.6-93.5,77.3-112.4,73.5ZM685.4,1041.1c21.3-44.6,59.8-73.5,108.7-80,27.8,6.9-103.5,99-108.7,80ZM714,1122.3c-13.5.7,13-25.2,15.3-31.4,113.5-154.9,107.7-22.9-15.3,31.4ZM791,1155.7c-11.1,8.4-23.7,20.3-34.7,27.5,12.4-22.6,34.9-89.6,77.8-104.4,63.8-48.2-23.2,67.7-43.1,76.9ZM848.3,1189.4c-75,86.9-12.2-30.6,10.9-56.6,26.8-18.9,1.4,51.1-10.9,56.6ZM876.5,1259.8c7.1-30.4,37.7-216.9,48.2-96.1,10,19.2-56.7,148.9-48.2,96.1ZM682.6,2054.4c-7.9,24.5-45.9,0-26.4-17.6,12.4-11.3,32.4,1.9,26.4,17.6ZM612.6,2196.9c-23,.2-20-42.7,4.9-31.9,18.1,7.1,14.2,30.8-4.9,31.9ZM515.2,2272c-14.8,8.8-30.1-5.2-19.7-20.4,9.7-16.2,37.8,12.4,19.7,20.4ZM1967.1,3087.4c40.4,2.8,2.6,63.8-16.1,27.8-4.3-11.6,2.6-27.7,16.1-27.8ZM2142.6,3013c10.4-3.1,24.3,8.2,19.5,19.3-15.9,31.3-50.8-4.3-19.5-19.3ZM2421.9,2881.3c31.6,13.6-20.4,57.1-24.2,20.1.4-11.4,12.4-23.6,24.2-20.1ZM2282.9,2583.5c9.6-30.3,53.5-4.6,31.3,17.4-15.9,17.7-41.4,5.2-31.3-17.4ZM2731.2,1991.7c-58.1-60,95-75.9,132.9-61.6-38.9,26.6-92.4,34.6-132.9,61.6h0ZM2871.1,1998.2c-28.2,2-131.4,65.7-140.4,39.1-17.8-57.6,110.6-47.1,140.4-39.1ZM2030.8,1176.6c-3-22.1,63,65.8,97.8,57.4,117.4,83.2-95.4-2.4-97.8-57.4ZM1358.9,1943.5c16-217.7,99.1-425.5,180.5-626.1,4.7-19,30.5-23.6,23.2,1.9-59.8,86.1-225.4,912.8-203.7,624.2ZM1313.5,2009.2c-1.7-272.6,81.4-554,211.5-791.5-68.5,215.2-180.6,623.8-211.5,791.5h0ZM1402.9,2024.9c13.3-228.5,109.4-555.9,217.3-708.3-61.4,237.9-154.5,469.4-203.9,711.4-2.8,32.8-15.9,26.4-13.4-3.1h0ZM1716.2,855.6c16,6.9,97.7,8,69.5,22.8-66.4,35-124.4-46.4-69.5-22.8ZM1713.8,788c21.4-10.8,92.3,24.5,62.1,49.9s-91.2-35.2-62.1-49.9ZM1810.5,730.8c15.5,39.8,140.8,46,107.4,16.3-43.8-6.3-94.4-52.6-38.6-79.7,235.5,139.1,7.7,218.9-39.6,200-32.4-12.9-81.7-120.9-29.3-136.6h0ZM1813.2,568.9c-33.4-4.8,1-30.6,19.2-25.4,52.8,8.5,96.9,40.5,140.3,68.9,46.8-3.6-90.1-81.8-112.4-81.5,30.6-91.7,277.7,127.6,274.1,213.2-35.2-39-68.2-84.9-113.1-115.5-49.4-24.4,26.1,63.6,34.9,72.9,14.5,12.2-2.9,17.5,9.6,32.4,4.7,7.4,17.9,15.4,15.7,24.5-13,16-2.6,28.5,9,40.8,7.4,12.6-15,17.7-10.1,30.9,13.9,19,15.5,20.1-3.7,34.6-4.4,10.6,8.9,20.3,13.6,27.6,6.8,17.4-43.5-5.4-20.6,30.3,21.1,41.7-61.2-18.3-22.8,43.3,8.4,25.5-67.8-14.4-47.7,25,32.3,46.2-79.7-22.6-41.8,34-8.7,16.5-67.3-24.7-49.5,15.8,2.4,20.6-33.3-9.2-40.2,0,2.6,26.2-127.9,14.9-134.3-4,353.8,22.5,431.4-385.6,79.8-467.9h0ZM2107.3,590.5c-69-31-120.8-82.2-200.2-99.4-11.2-73,227.2,54.5,200.2,99.4ZM1804.6,1352.9c-35.8-22,.4-256.4,36.1-161.6.9,93.1,44.5,89.8-36.1,161.6ZM1869.7,1388.3c-43.4,228.7-129.8,482.2-234.5,697.5,81.1-221.2,108.3-491,234.5-697.5h0ZM1841.5,1131.2c-36.3-7.9-82.8-18.6-106.2-48.1,75.9,23.9,156.1,39,236.4,40.4,20.9,12.9-114.9,16.4-130.2,7.6ZM1742.6,1142.7c24.8,7.6-12.7,48.8-5.7,67.6,21.1,2.7,28.5-63.5,53.1-48.2-7.4,32.3-7.8,78.2-37.7,99-17.3,6.2-77.3,65.6-85,45.7,11.9-59.1,20.2-129.1,75.4-164.1ZM1687,1204.4c-3.9,11.3-143.8,61.8-110.3,25,3.5-27.4,137.9-141.1,140.8-97.5-10.2,24-20.7,48.3-30.4,72.4h0ZM1667.8,1398.8c-77.7,198.8-158,492.4-213.7,650.6-14.6-60.1,167.6-800.2,213.7-650.6h0ZM1752.8,1362.9c-35.3,232.9-147.5,519-244.5,709.5,60.8-239,122.1-498.2,244.5-709.5h0ZM1758.8,1587.8c-44.1,144-127.1,419.1-194.6,484.3,26.8-99.4,337.8-1065.7,194.6-484.3ZM1700.1,3013.1c-123.3-194-115.3-447.1-111-671.1-4.3-347.6,65.4,529.9,111,671.1ZM1740.8,3118.3c-6.5,21.8-40.6,20.4-40.4-3.4,1-29.7,48.6-27.7,40.4,3.4ZM1730.5,2016.8c-13.3,27.1-25.2,55.5-41.7,80.8,88.5-203.2,130.8-468.9,221.7-682.9,24.8-1.8,19.9,28,13.2,43.3-64.6,186.4-105.2,380.9-193.2,558.9h0ZM1928.6,1365.2c-16.9-31.8-34.6-64-60.3-90.6-18.4-20.3-8.9-129.1,25.4-81.6,1.8,14.9,21,123.3,37.6,82.8,2.1-15.3-17.3-118.2,13.8-80,42.8,86.8,65.9,97.2,36.5-5.9.7-5.1,3.8-3.5,7.1,0,19.7,27.8,38.8,54.3,69,70.6,19,21.2,1.9,55.5,16.5,81.9,2,6.7,3.2,14.7-5.9,8-69.8-68.4-110.5-99.1-139.7,14.8h0ZM2544.4,780.5c-10.1,0-4.2-11,.2-15.4,10.8-8.1,16.5-24.7-2.8-19.7-8.6,1-40.9,22.3-33.6,1.2,41.2-72.5-50.3,19-22.9-40.8-11.5-16.5-62.9,39.5-33.4-23.2-16.6-18.7-64.7,56.8-44.6-9.6-1.6-7.3-12.1-2-16.6-.5-72.4,12-38.9-40.8,13-33.8,54.7-5.4,236.4,98.1,140.7,141.8ZM2576.8,784.4c38.6-24.4-10.7,46.9-29.6,29.9,2-13,21.3-20,29.6-29.9ZM2565.2,851.1c-3.1-6.5,18.2-19.4,23.1-23.4,27.3-12.3-9.8,37.3-23.1,23.4ZM2608.9,990.5c-55.8,64.2-56.6-7.8-45.8-20.3,26.1-30.3,70.3-7.9,45.8,20.3ZM2705.1,753.5c10.7-9.1,86.5,14.8,42.3,36.9-52.9,26.5-80-15.4-42.3-36.9,0,0,0,0,0,0ZM2659.4,772.2c-2.8,6.9-6,18-9.8,4.4-24.6-80.5-96.2-139.4-177.6-159.7-108.3-40.6,197.8-39.4,222,93,8.9,27.5-29.5,36.7-34.6,62.2h0ZM2648.1,533.5c52,59.9-22.9-5.6-44.1,11.3-5.4-5,1.8-19-16.5-17.5-55.1,21,10.3-34-52.9-7-30.9,13,16.7-27.2-18.9-17.6-53.3,27.2-17.8-9.4-40.4-4.8-23.8,24.7-35.4-6.3-56.7,17.5-16.5,23.9-12.3-17.2-35.6,3.5-15.4,21.6-25.1-9.3-37.4,6.8-11.3,15.5-34.9,4.7-39.8,27.6-6.5,13.4-14.7-6.8-23.6-2.4-13.3,4.7-11.4,33.5-22,37.3-25.2-38-34.9-12.7-37.3,22.1,1.7,48.2-40.2-55.5-46.5,32.6,0,33.5-17-12.8-30.1-8.3-2.3-141.7,375.9-265.4,501.9-101.1h0ZM2619,434.9c24.3,8.4-34.2,36.1-21.1,17,6.1-5.5,12.1-17.6,21.1-17ZM1966.3,446.7c178.7-94.6,503.1-199.2,645.6-15.9-8.5,4-30.7,10.8-40.9,7.5-7.1-5.4,17.9-18.5,4-22.8-89.7,31.3,21.8-41.4-72.7-1.9-41.6,13.7,17.8-32.4-6.6-31.8-18.1.8-30.3,15.4-44.7,23.4-12.7-1.7,7.4-24.5-5-27.1-27.4,4.5-38.4,47.5-40.6-7.2-15.5-7.1-26.2,38-37.7,19.1-3.5-6.6-3.9-24.6-15.2-19.3-26.5,44.3-19,3.1-49.4.7,12.7,67.5-21.5,11.4-58.1,5.9-34.3-5.8,21.1,29.7,22.7,41.9,3.6,36.8-62.7-24.6-81.7-24.6-39.8-12.8,39.4,42.2,39.6,55.9,24.1,43-140.3-66-150.6-39.4,33.6,22.2,74.9,31.6,99.3,68.3,37.7,62.5-162-78.1-148.8-39,5.4,15.9,178,102.8,94.7,98.5-34.4-39.7-153.8-92.3-153.8-92.3ZM1455.8,525.6c-7,44.1-21.5,33.2-43.2,32.2-88.8-4.4,63.4-159.7,43.2-32.2ZM1768,309.6c1.9-7.8,14.1-25.3-2.1-22-13.9-1.5-34.2,38.4-45,23.6,5.4-57.3-30.3,7.9-43.9,0-.6-30.6-22.6-6.4-33.6,3.7-7.4,3.7-10.1-9.4-17.8-7.7-17.7-.1-39,55.1-47,24.8-8.1-2.2-17.1,15.9-21.7,21.6-6.6,13.8-26.9-8.4-27.4,9.7,11.1,44.1-24.8-1.7-18.5,33,8.9,20.4,3.7,16.1-13,15.7-12.1,2.9-8.5,39-21.2,31.2,25.6-333.6,608.4-147.7,398.5-77.3-7.6-10.8,22.1-21.6,29.3-28.8,17.6-30.4-67.7,38.2-51.9-.4,43.5-34.8-14.9-16.1-31.7-1.5-15.6,4.6-2.7-18.8,2.3-23.5,12.9-23-29.5-6.2-36.8,2-7.5,8.2-22.4,11.9-18.5-4h0ZM1676,712.3c36-36.1,91.8-48.3,125.6-87,6.2-11.9,14.7-26.3,29.5-16.5,52.5,39-89.9,68.3-103.6,104.3-16,22.6,41.3,17.5,31.5,45.5-11.5,18.8-37.2-19.1-57.9-19.5s-37-10.4-25-26.8h0ZM1639.8,932.8c-.6-42.8,50.4-35.8,77.2-23.5,38,18.7,69.9-8.1,91.2-3,172.1,41.5-65.7,155.3-168.4,26.5ZM1529.6,1131.2c49.8-17.2,106.2-48.4,156.8-49.8,36.8,71.6-212.7,97.9-156.8,49.8ZM1475,1219.5c-66.4,179.2-137.2,357.3-170.2,546.5-85.4,525.3,1.3-363.6,150.4-545.7,5.4-14.2,24-22.4,19.7-.8h0ZM1448.7,1135.5c-1.2,19.6-121.4,228.2-149.4,333.2,5.9-84.2,53.5-274.3,149.4-333.2ZM959.3,1283.1c-2.2-23-5.2-242.4,26.6-130.4,4.3,16-10.3,171.2-26.6,130.4h0ZM1040,1271.4c-8.6-29-57.6-176.4,9.8-141.6-1.6,18.1,26.8,242.6-9.8,141.6ZM1131.6,1288.9c-103.4-121.9,10.8-274.6-.7-45.3-.2,13.5,6.6,33.5.7,45.3ZM1173.2,1151.8c17.1-34.4,68.9-5.4,95.4-63.3,24.9-29.2,71-78.8,107.6-38.5,16.9,24.1-35.6-10.4-47.8.8-15.7,12.3,54.4,44.8,18.7,49.3-71.4-14.7-85-9-20,36.1,34.2,37.3-67.6,6.5-82.9,3.7-20.3,27.1,57.7,51,64.2,69.7-8.2,32.8-118.7-39.4-86.5,18.5,16,22.7,46.9,26.2,67.3,42.5-63.1,48.3-135.8-48-116-118.7h0ZM941.1,2192.9c-35.2,2.1-76.9,7.3-118.9,8.9-25.1-11-53.5-35.2-75.8-56.9,176.2,43.9,589.6-102.3,495-24.2-82.7,15.5-451.4,363.3-224.5,184.3,90-53.9,194.2-168.6,292.2-173.1-169.1,127-347.3,253.9-506.2,391.1,59.2-172,212.7-301.7,366.6-390.8-161.6,63.1-385.9,243.3-549.7,167.1,94.6-25.6,270.4-59.2,321.2-106.3h0ZM847,2776.1c-25.4,7.6-35.6-40.6-7.6-40.7,24.2-.2,29.9,33.5,7.6,40.7ZM814.8,2704.4c-7.6,36.2-53.1-7.4-73.5-11.4-27-11.1,75.4-.8,73.5,11.4ZM608.2,2379.6c68.7,17.4,119.7,93.8,124,158.9-18.4-23.8-36.6-59.1-58-73.8-19.2-13.1-127.4-87.8-66-85.1ZM624.5,2453.8c86,161.1-25,43.4-42.1,11-11-22.6-51-34.6-55.4-57.9,20.2-28.1,84.8,23,97.5,46.9ZM472.3,2425.6c50.1-32.1,92.6,57.5,111.9,87.2s58.8,73.9,38,75.6c-22.9-49.9-159.7-125.4-149.8-162.9h0ZM558.2,2584.4c-35.7-54.2-141.6-61.8-152.7-127.2,50.8-77.4,191.1,166.6,152.7,127.2ZM459.3,2542.9c5.6,10.7,71.8,45,52.5,47.4-56.4-17.8-148.1-39.8-168.9-97.3,43.2-48.8,83.5,18.9,116.4,49.9h0ZM529.1,2918c18-24,63.6-42.7,63.2-76.6-18.5-1.9-131.2,54.7-126.7,36.9,32.3-17.3,60.6-41.1,77.1-74.8,22.5-36.9-147.7,72.7-140.5,47.6,19.2-4.9,121.5-85.9,97.4-98.1-14.3,7.8-158.1,83.3-132,52.9,26.5-10.9,49.9-26.3,66.4-50.3,51.2-65.8-136.7,44-117.3,7.9,24-10.1,42.9-28.6,63-44.6,53.5-47.5-156.3,44.9-97.8-4.3,18.1-17.8,87-34.9,86.5-50.8-22.5-8.1-129.5,35.3-117.7-.2,14.7-28,54.8-24.6,81.9-28.6,4.8-17.7-113.8-2.4-70.5-53.9,18.8-28.2,57.1,10.9,81.3,13.8,1-28.4-93-33.4-40.2-70.3,9.6-9.9,16-16.6,29.3-10.3,58,38.7,106.4,92.8,174,118.3,28.3,30.6-43.8,9.4-54.8,20.4,12.1,19.1,39.7,25.8,57.4,39,14.8,18-109.3-16.4-48.4,12.3,60,30,78.4-14.8,104.5,53.5,24.3,2.2,17.2-74.1,37.7-34.8,19.5,19.9-51.9,102-10.2,70.3,25-18.6,43.6-45.8,60.1-69.9,20.8,20.3-48.1,109.7-14.8,93.3,17.6-12.2,35.1-25.3,50.7-40.1,40.2,37.9-105.2,142.8-159.6,141.2h0ZM586.3,2949.3c54.9-39.5,90-101.3,148.3-138.4,5.4-5.5,13.3-11.8,11.9,1.4-13.8,79-86.5,131-161.5,146.3-9.3,0-3-6.6,1.3-9.3ZM777,2868.9c39-29.1-4.8,56.9-17.8,66.7-32.7,42.6-90.5,68.1-143,70.8,49.9-46,104.5-95.9,160.9-137.4h0ZM713.2,3018.8c186.2-212.3,151.5.4-31.3,26.5-4-9.1,24.9-17.9,31.3-26.5ZM873.8,2966.5c50.6-27.9-40.8,121.1-136.9,124.4,25.3-35.2,89.7-91.9,136.9-124.4h0ZM1155.9,3310.2c-86,120.6-29.5,61.4,62.4,26,64.6-19.1-194.5,129.8-1.2,58.8,43.8-6.2-60.5,38-61,52,1.1,15.2,89.7-16.7,99.4-10.9-136.6,72-65.5,39.1,15.8,46.1-20-.6-147,50.6-66.3,45.4,12.6.2,57.5-16.5,57-2.3-95.4,28.6-96.3,51.6,4.6,38.1,28,5.6-54,19.4-62.9,24.8-33.6,25.1,56.3,7.2,68,15.7-78.9,27.2-119.6,33.2-2.1,41.2,13.7,7.1-126.4,21.9-61.4,38.1,19.2.8,40.1-2,57.3,3.1,10.2,13.2-61.3,11-71.2,23.8-12.3,21.7,64.4,1.6,75.2,15.5,2.8,3.6-13.8,1.6-15.6,1.6-48-3.4,6.5,24.5,17.2,37.3-94.4-12.5-96.3-12.8-9.7,40.8,34.2,30.5-74.1-16.3-64.2,10.2,54.8,32,74.6,41.3-3.8,32.4-3.8,17.4,60.2,47.4,1.5,38-25.1,4-14.5,43.3-44.9,48.9-49.3,26,34.3-57.2-1.6-91.5-13.5-20.7,64.1-264.3-62.2-451.2-40.4-59.7-68.3-77.9,39.8-121.2-63.3,85-84.1,99.1,30.1,39.3h0ZM1091,3232.4c14.7,9-49.8,89.5-69.8,82.7-40.3-23.9,58.4-58.1,69.8-82.7ZM976,3263.1c22.9-25.9,54.6-51.8,84.1-71.3,1.7,24.3-72.4,122.3-84.1,71.3h0ZM936.9,3226.8c26.6-21.9,51.8-48.1,79.8-67.2,15.8,24-98.9,112.8-79.8,67.2ZM889.7,3202c12.8-33.3,55.7-58.6,83.4-82.4,58.4-42.1-49.4,101.5-83.4,82.4ZM841.3,3160.4c33.5-36.6,73.7-68.7,113.1-98,10.5,36.9-91.9,122.1-113.1,98ZM800.7,3130.6c-21.5,1,16.6-21.5,19.3-27.4,18.4-28.1,40.3-57.7,74.1-67.2,82.2-73.6-18.7,97.6-93.5,94.6h0ZM964.4,2588.2c-101.3,137-121.3,178.2-40.5-14.8,86.8-155.4,287.9-389.9,444.7-420.2-104.6,173-259,299.4-404.3,435.1h0ZM988.8,2833.5c-3.8-17.8,30.8-31.3,32.9-9.3,1.4,18.7-28.7,33.7-32.9,9.3ZM1256.2,2966.2c-1.6,24.1-32.7,18.7-35.7-1.3-1.9-23.1,38.2-21.7,35.7,1.3ZM1233.3,2561.8c-68.6,58.7-144.5,110.4-199.7,182.8,55.5-191.3,235.2-406.3,374.9-574,68.7-24.4-125.8,376.9-175.2,391.3ZM1357.4,2714.9c-279.6,516.5,156.5-711.5,79.1-354.7-4.9,31.3-23.3,138.1-22,168.3,15.2-20.2,88.5-349.3,112-339.3,27.4,202.7,31,425.9-12,628.7-94.1,398.4-24.5-369.9-14.1-461.4-33.9,143-68.1,230.4-143.1,358.5h0ZM1510.3,3042c.8,28.8-50.2,27.8-41.2-3,6.8-19.4,40.6-19.8,41.2,3ZM1606.7,3129.1c-27.2,18.9-148,78.7-174.4,53.1-.3-7.8,8.6-10,14.9-11.2h0M1458.3,3222.5c58.1-27.5,220.5-59.4,207.5-43.4-26.5,23.4-191,77.4-222,55-1.9-7.8,8.3-10.5,14.5-11.6h0ZM1459.2,3274.3c53.2-24,222.8-72.9,261.9-74.8,13.6,8.2-271.4,121.4-261.9,74.8h0ZM1493.9,3335.4c-35.3-22.3,197.9-94.6,209.4-80.1,32-8.4-185.9,94.6-209.4,80.1ZM1524.5,3377.2c46.2-33.4,127.1-73.1,176.6-75.9-10,39.3-134.3,94.9-176.6,75.9ZM1701.5,3355.6c-4.5,30.4-86.5,64.5-119.5,61.7-32.5-6.8,128.5-87.2,119.5-61.7ZM1615.2,3462.8c14.2-36.8,133.5-92.2,167.7-96.1,10.5,20.3-136.6,106.5-167.7,96.1ZM1659.5,3504.3c12.3-38.6,121.1-80.3,160.9-84.1,5.7,13.9-144.5,95.8-160.9,84.1ZM2109.6,4165.2c-32.2,13.4,23,15.8,31.8,21.4,4.7,15.5-56.7.4-46.9,23.1,5.4,4.2,69.1,17.6,46.2,25.1-59.1-.9-85.1,6.6-11.7,30.8,14.3,15.9-29.9,9.2-39.1,9.2-65-.1,33.8,23.9,31.6,35.8-14.4,8.8-34.6-.5-50.5-2.5-49.7-2.4,53.9,39.9,22.3,45.3-41.1-8-106.3-45.8-43.1,21.9,10.6,29.3-70.9-47.1-67-16.2,3.3,7.9,18.9,28,1.9,28.5-15.6,1.5-48.2-44.4-48.2-13.1.7,27.6-30.7,8.4-51.6,5.1-79.7,21.2-161.2-133.8-70.6-149.4-25.5,226.5,301.5,61.8,274.2-108.6,13.1-21.8,76.6-4.3,100.6-3.4-18.5,12.9-81.3-.7-83.9,23.9,47.1,12.6,74.2,16.5,3.9,23.1ZM2085.6,4078.5c14.6-22.5,99.5-46.7,131.6-28.2-12.4,7.8-132.2,44.5-131.6,28.2ZM2077.9,4030.8c25.2-20.1,58-27.1,96.6-16.9-4,8.7-105.1,40.6-96.6,16.9ZM2057.4,3992.1c-6.3-25.1,83.8-50.1,90.4-34.8-14.1,15.9-68.5,38-90.4,34.8ZM2028.9,3946.9c7.8-29.7,69.8-48,101.9-39.6-9.6,13.3-82,51.8-101.9,39.6h0ZM2002.9,3897.2c21.8-24.4,80.1-53.1,99.6-43.9-4,15.7-127.8,73.2-99.6,43.9h0ZM1981.5,3850.1c18.3-24.1,72.6-42,88.5-29.8-7.4,25.5-136.5,55.8-88.5,29.8ZM1930.6,3809.3c22.4-29.6,86.5-47.4,120-41.3-16.7,15.5-109.8,61.3-120,41.3ZM2030.7,3706.6c-10.4,16.9-130.6,74.6-135.5,54.4,31.2-29.2,102.8-60.4,135.5-54.4ZM1868.5,3716.7c13.9-41.1,117.2-71.3,142.3-49.8-9.3,11.8-129.9,53.8-142.3,49.8ZM1832.6,3663.4c27.1-23.8,108.4-64.5,141.8-51.7-7.1,13.7-142.8,71.8-141.8,51.7ZM1797.7,3627.1c14.3-34.9,105.9-74.9,142-72.5,7.8,28.6-128.9,95.2-142,72.5ZM1915.5,3494.8c14.2,34.2-154,119.8-169,89.4,37.6-35.4,123.5-78.8,169-89.4ZM1895.2,3443.2c11.4,26.1-184.3,130.9-190.2,96.3,26.6-35.1,155.5-98.4,190.2-96.3ZM2206.6,2747.3c259.4,246.8-126.2-15.7-174.8-156.1-23.8-41.9,16.7-53.3,174.8,156.1ZM2227.7,2576.4c-108.1,3.4-221.1-145.9-279.1-250.5,95.1,80.3,171.5,183.9,279.1,250.5ZM2001.6,2781.1c-77-38.9-207.3-333-177-455.8,43.3,85.1,147,364.2,177,455.8ZM1886.3,2951.1c-175.4-234.7-148.9-564.3-151.2-642.4,46.3,161.1,100.2,482.1,151.2,642.5h0ZM1850.2,1882.9c-167.5,474.7,50.2-313.8,145.7-484.5,12.3-16.7,22.4.4,13.6,13.9-68.8,151.1-99.4,316.1-159.3,470.6h0ZM2053.2,1412.7c4.8-10.5,55.4-38.5,53.2-20.4-85.7,125.1-113.5,275.4-166.5,415.1-119.8,336,50.3-273,113.3-394.7h0ZM1974.7,1858c64.6-163.9,75.8-370.3,220.3-488.1,4.9-3.9,17.6-11.7,11.9.4-53,80.4-100.4,165.1-136.7,254.5-33.9,75.9-58,160.9-95.5,233.2h0ZM2230.9,1633.3c-61.7,12.2-119.2-64.7-60.2-99,21.5,31.9,69.8,55.6,60.2,99ZM2267.3,1431c33.5,9,71.7,86,10.6,67.4-13.6.2-61.6-31.2-60.8-10,87.6,81.1,17,88.2-45.8,36.7,103.5-394.1,458.7-183.9,204.2-211.8,29.4,4.5,65.1,71.9,13.4,59.6-12.1-6.1-99.2-20.9-66.8,3.5,37.7,16.6,63.9,83.8-1.5,56.6-11.7-5.8-83.3-26.2-53.2-2h0ZM2346.2,1608.8c12.3-47.1,90.5-130.8,131.4-114.7-47.2,33.9-87.2,78.6-131.4,114.7ZM2457.5,1609.2c-104.5,121.7-5.6-98.8,74.9-92.7,53.4-4-67.7,75.9-74.9,92.7ZM2503.8,1679.2c-49.7,72.8-20.4-102.2,113.1-112.9,32.5,2.1-106.7,85.3-113.1,112.9ZM2566.6,1732.2c-29.1,35.3-15.4-22.6-12.8-39.3-3.9-48.1,149.6-92.9,122.1-61.1-38.1,31.7-82.4,57.6-109.3,100.4h0ZM2623.5,1723.5c-.8-27.7,136.8-68.2,117.9-41.6-40.8,32-92.3,53.4-105.8,106.8-40.3,2.6-25.1-42.9-12.1-65.2ZM2668.2,1831.7c-21-31.5,32.2-92.7,72.9-95.8,13.4-3,78.3-26.8,74.2-8.3-51.4,30.8-112.2,53.1-147.2,104.1h0ZM2826,1803.5c-48.6,21.3-93.4,49.5-131.9,85.5-32.4-84.7,180.7-119.9,131.9-85.5ZM2850.9,1863c-44.6,25.9-95.6,51.3-142.5,68.4-27-52.5,139.3-87.3,142.5-68.4ZM2702.7,2220.7c29,8-3.2,51.9-19.3,55.8-26.1-11.9-9.3-60.6,19.3-55.8ZM2763.1,2409.9c-40.5,78-142.6,90.5-217.7,62.7-14.7-7.8-51.8,6.3-45.3-21.7,1.9-27.6,127.7-30.2,100.1-83.4-55.1-37.5-124.4,87-99.8,19.2,38.8-109.5,173.6-80.1,229.9-5.4,15.1,8.4,52.4,2.1,32.9,28.6h0ZM2787.1,2306.3c-12.6,27.6-68.4,44.4-60.3-2.2,7.6-33.8,68.8-40.9,60.3,2.2ZM2782.4,2147.6c-49.1,19.1-45.4-31.7-25.8-36.6,71.2,2.2,160.6,27.8,25.8,36.6ZM2758.4,2206.8c-31.1-57.9,36-38.4,69.1-27.4,56.6,8.6-55.1,37.3-69.1,27.4ZM2816.4,2381c-14.4-18.7-.1-48.6,18.6-59.8,37.8-12.5,37.5,80.4-18.6,59.8ZM2754.4,2099c-20,10.4-16.3-19.7-18.1-30.8,8-27.9,123.4-13.3,138.6,1.4-38.6,13.4-83.3,10.8-120.5,29.5ZM2908.6,2403.2c-17.7-7.4-.8-32.4-1.4-46.5,9.1-55.3,57.6,51.1,1.4,46.5Z"/>
+</svg>`;
+            cardFront.innerHTML = jokerSVG;
+        } else {
+            cardFront.classList.add(`suit-${cardData.suit.color}`);
+            
+            const cardValue = document.createElement('span');
+            cardValue.classList.add('card-value');
+            cardValue.textContent = cardData.value;
+
+            const cardSuit = document.createElement('span');
+            cardSuit.classList.add('card-suit');
+            cardSuit.textContent = cardData.suit.symbol;
+            
+            cardFront.appendChild(cardValue);
+            cardFront.appendChild(cardSuit);
+        }
+        
+        cardInner.appendChild(cardBack);
+        cardInner.appendChild(cardFront);
+        card.appendChild(cardInner);
+
+        addCardEvents(card);
+        return card;
+    }
+
+    function addCardEvents(card) {
+        let isDragging = false;
+        let hasDragged = false;
+        
+        card.addEventListener('dblclick', () => {
+            if (card.dataset.discarded || card.classList.contains('jail-joker')) return;
+            card.classList.toggle('flipped');
+            if(!card.classList.contains('flipped')) {
+                card.classList.remove('selected');
+            }
+            updateScores();
+        });
+
+        card.addEventListener('mousedown', (e) => {
+            if (card.dataset.discarded || card.classList.contains('jail-joker') || card.classList.contains('immobile')) return;
+            e.preventDefault();
+            isDragging = true;
+            hasDragged = false;
+            card.style.transition = 'none';
+            card.classList.add('dragging');
+            card.style.zIndex = zIndexCounter++;
+            card.dataset.moved = 'true';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                hasDragged = true;
+                const tableRect = gameTable.getBoundingClientRect();
+                const cardRect = card.getBoundingClientRect();
+                let newX = e.clientX - (cardRect.width / 2);
+                let newY = e.clientY - (cardRect.height / 2);
+
+                newX = Math.max(0, Math.min(newX, tableRect.width - card.offsetWidth));
+                newY = Math.max(0, Math.min(newY, tableRect.height - card.offsetHeight));
+
+                card.style.left = `${newX}px`;
+                card.style.top = `${newY}px`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                card.classList.remove('dragging');
+                card.style.transition = 'top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s ease';
+
+                if (hasDragged) {
+                    const randomRotation = (Math.random() * 8) - 4;
+                    card.style.transform = `rotate(${randomRotation}deg)`;
+                }
+            }
+        });
+
+        card.addEventListener('click', () => {
+            if (card.dataset.discarded || hasDragged || card.classList.contains('jail-joker')) return;
+            card.classList.toggle('selected');
+            updateScores();
+        });
+    }
+
+    // --- Lógica Principal do Jogo ---
+    function initializeBaseDeck() {
+        console.log("Modo 'Baralho Base' não implementado.");
+        alert("O modo 'Baralho Base' ainda não foi implementado.");
+    }
+
+    function initializeJokerJailbreak() {
+        gameTable.classList.remove('victory-bg');
+        currentGameMode = 'jailbreak';
+        const cardsOnTable = document.querySelectorAll('.card');
+        cardsOnTable.forEach(card => card.remove());
+        winModal.classList.remove('show');
+        
+        document.getElementById('stock-click-area')?.remove();
+
+        let deck = [...fullDeckData];
+        
+        const jokerIndex = deck.findIndex(card => card.value === 'JOKER');
+        const jokerCardData = deck.splice(jokerIndex, 1)[0];
+        
+        const secondJokerIndex = deck.findIndex(card => card.value === 'JOKER');
+        if (secondJokerIndex > -1) {
+            deck.splice(secondJokerIndex, 1);
+        }
+        
+        for (let i = deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+
+        const allCardElements = [];
+        const startY = getDeckStartY();
+        const initialX = HORIZONTAL_PADDING;
+        
+        deck.forEach(cardData => {
+            const card = createCardElement(cardData);
+            card.style.transition = 'none';
+            card.style.left = `${initialX}px`;
+            card.style.top = `${startY}px`;
+            gameTable.appendChild(card);
+            allCardElements.push(card);
+        });
+        
+        const jokerCard = createCardElement(jokerCardData);
+        jokerCard.style.transition = 'none';
+        jokerCard.style.left = `${initialX}px`;
+        jokerCard.style.top = `${startY}px`;
+        gameTable.appendChild(jokerCard);
+        
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                allCardElements.forEach(card => card.style.transition = 'top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s ease');
+                jokerCard.style.transition = 'top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s ease';
+
+                const cardWidth = 100;
+                const cardHeight = 140;
+                const spacing = 20;
+
+                jokerCard.style.left = `${(window.innerWidth / 2) - (cardWidth / 2)}px`;
+                jokerCard.style.top = `${(window.innerHeight / 2) - (cardHeight / 2)}px`;
+                jokerCard.classList.add('flipped', 'jail-joker');
+                jokerCard.dataset.moved = "true";
+
+                const gridPositions = [
+                    { id: 'corner-tl', cards: 3, isWall: false, offX: -1, offY: -1 }, 
+                    { id: 'wall-top', cards: 7, isWall: true, offX: 0, offY: -1 }, 
+                    { id: 'corner-tr', cards: 3, isWall: false, offX: 1, offY: -1 },
+                    { id: 'wall-left', cards: 7, isWall: true, offX: -1, offY: 0 },  
+                    null, 
+                    { id: 'wall-right', cards: 7, isWall: true, offX: 1, offY: 0 },
+                    { id: 'corner-bl', cards: 3, isWall: false, offX: -1, offY: 1 }, 
+                    { id: 'wall-bottom', cards: 7, isWall: true, offX: 0, offY: 1 }, 
+                    { id: 'corner-br', cards: 3, isWall: false, offX: 1, offY: 1 }
+                ];
+                
+                let currentCardIndex = 0;
+
+                gridPositions.forEach((pileInfo, i) => {
+                    if (!pileInfo) return;
+                    const row = Math.floor(i / 3);
+                    const col = i % 3;
+                    const pileX = (window.innerWidth / 2) - cardWidth / 2 + (col - 1) * (cardWidth + spacing);
+                    const pileY = (window.innerHeight / 2) - cardHeight / 2 + (row - 1) * (cardHeight + spacing);
+
+                    for (let j = 0; j < pileInfo.cards; j++) {
+                        if (currentCardIndex >= allCardElements.length) break;
+                        const card = allCardElements[currentCardIndex++];
+                        card.dataset.pileId = pileInfo.id;
+                        card.classList.add('immobile');
+                        card.style.left = `${pileX + (j * PILE_STACK_OFFSET * pileInfo.offX)}px`;
+                        card.style.top = `${pileY + (j * PILE_STACK_OFFSET * pileInfo.offY)}px`;
+                        card.style.zIndex = j;
+                        if (j === pileInfo.cards - 1) {
+                            card.classList.add('flipped');
+                        }
+                    }
+                });
+
+                alignStaticPiles();
+                
+                createStockPileClickableArea();
+                
+                zIndexCounter = fullDeckData.length + 100;
+                discardCounter = 0;
+                updateScores();
+            }, 50);
+        });
+    }
+
+    function updateScores() {
+        let redTotal = 0;
+        let blackTotal = 0;
+        const selectedCards = document.querySelectorAll('.card.selected');
+
+        selectedCards.forEach(card => {
+            if (card.classList.contains('flipped')) {
+                const value = getCardValue(card.dataset.value);
+                if (card.dataset.color === 'red') {
+                    redTotal += value;
+                } else if (card.dataset.color === 'black') {
+                    blackTotal += value;
+                }
+            }
+        });
+
+        redScoreEl.textContent = redTotal;
+        blackScoreEl.textContent = blackTotal;
+        removeBtn.disabled = !(redTotal > 0 && redTotal === blackTotal);
+    }
+
+    function removeSelectedCards() {
+        const selectedCards = document.querySelectorAll('.card.selected');
+        const discardPileRect = discardPileEl.getBoundingClientRect();
+        
+        const pilesToUpdate = new Set();
+
+        selectedCards.forEach(card => {
+            if (card.dataset.pileId) {
+                pilesToUpdate.add(card.dataset.pileId);
+            }
+            card.classList.remove('selected');
+            card.dataset.discarded = 'true';
+            card.classList.add('discarded'); 
+            card.removeAttribute('data-joker-stack'); 
+            card.style.transform = '';
+            card.style.left = `${discardPileRect.left}px`;
+            card.style.top = `${discardPileRect.top - discardCounter * STACK_OFFSET_Y}px`;
+            card.style.zIndex = 1000 + discardCounter;
+            discardCounter++;
+        });
+
+        pilesToUpdate.forEach(pileId => {
+            const remainingCards = Array.from(document.querySelectorAll(`.card[data-pile-id="${pileId}"]:not([data-discarded="true"])`));
+            if (remainingCards.length > 0) {
+                const topCard = remainingCards.reduce((a, b) => parseInt(a.style.zIndex) > parseInt(b.style.zIndex) ? a : b);
+                topCard.classList.add('flipped');
+            }
+        });
+
+        updateScores();
+        checkWinCondition();
+    }
+    
+    function createStockPileClickableArea() {
+        const clickableStock = document.createElement('div');
+        clickableStock.style.position = 'absolute';
+        
+        const stockPileX = HORIZONTAL_PADDING;
+        
+        clickableStock.style.left = `${stockPileX}px`;
+        clickableStock.style.top = `${getDeckStartY()}px`;
+        clickableStock.style.width = '100px';
+        clickableStock.style.height = '140px';
+        clickableStock.style.cursor = 'pointer';
+        clickableStock.style.zIndex = 9999;
+        clickableStock.id = 'stock-click-area';
+        gameTable.appendChild(clickableStock);
+
+        clickableStock.addEventListener('click', () => {
+            const jokerStack = document.querySelectorAll('.card[data-joker-stack="true"]:not([data-discarded="true"])');
+            if (jokerStack.length >= MAX_JOKER_STACK) return;
+
+            const deckCards = Array.from(document.querySelectorAll('.card:not(.jail-joker):not([data-pile-id]):not([data-discarded="true"]):not([data-joker-stack])'))
+                .sort((a, b) => parseInt(b.style.zIndex) - parseInt(a.style.zIndex));
+
+            if (deckCards.length === 0) return;
+
+            const card = deckCards[0];
+            const cardWidth = 100;
+            const cardHeight = 140;
+            const centerX = (window.innerWidth / 2) - (cardWidth / 2);
+            const centerY = (window.innerHeight / 2) - (cardHeight / 2);
+
+            card.dataset.moved = 'true';
+            card.dataset.jokerStack = 'true';
+            card.style.zIndex = zIndexCounter++;
+            card.classList.add('flipped');
+
+            setTimeout(() => {
+                card.style.left = `${centerX + (jokerStack.length * 5)}px`;
+                card.style.top = `${centerY - (jokerStack.length * 5)}px`;
+                card.style.transform = `rotate(${(Math.random() * 10 - 5)}deg)`;
+            }, 50);
+        });
+    }
+
+    function checkWinCondition() {
+        if (currentGameMode !== 'jailbreak' || gameTable.classList.contains('victory-bg')) return;
+
+        const jokerStack = document.querySelectorAll('.card[data-joker-stack="true"]:not([data-discarded="true"])');
+        if (jokerStack.length > 0) return;
+
+        const walls = ['wall-top', 'wall-bottom', 'wall-left', 'wall-right'];
+        for (const wallId of walls) {
+            const cardsInWall = document.querySelectorAll(`.card[data-pile-id="${wallId}"]:not([data-discarded="true"])`);
+            if (cardsInWall.length === 0) {
+                triggerWinAnimation(wallId);
+                return;
+            }
+        }
+    }
+    
+    function triggerWinAnimation(clearedWall) {
+        gameTable.classList.add('victory-bg');
+        const jokerCard = document.querySelector('.jail-joker');
+        if (!jokerCard) return;
+
+        jokerCard.style.zIndex = 99999; 
+        jokerCard.classList.remove('jail-joker');
+
+        let targetX = jokerCard.offsetLeft;
+        let targetY = jokerCard.offsetTop;
+        const escapeDistance = window.innerWidth; 
+
+        switch (clearedWall) {
+            case 'wall-top':
+                targetY -= escapeDistance;
+                break;
+            case 'wall-bottom':
+                targetY += escapeDistance;
+                break;
+            case 'wall-left':
+                targetX -= escapeDistance;
+                break;
+            case 'wall-right':
+                targetX += escapeDistance;
+                break;
+        }
+
+        jokerCard.style.transition = 'top 1.5s ease-in, left 1.5s ease-in, transform 1.5s ease-in';
+        jokerCard.style.left = `${targetX}px`;
+        jokerCard.style.top = `${targetY}px`;
+        jokerCard.style.transform = 'rotate(720deg)';
+
+        setTimeout(() => {
+            winModal.classList.add('show');
+        }, 1500);
+    }
+
+    function shuffleOrRestart() {
+        if (currentGameMode === 'jailbreak') {
+            initializeJokerJailbreak();
+        } else {
+            initializeBaseDeck();
+        }
+    }
+    
+    function alignStaticPiles() {
+        const cardWidth = 100;
+        const cardHeight = 140;
+        const startY = getDeckStartY();
+
+        const stockPileX = HORIZONTAL_PADDING;
+        const discardPileX = window.innerWidth - cardWidth - HORIZONTAL_PADDING;
+
+        const stockClickArea = document.getElementById('stock-click-area');
+        if (stockClickArea) {
+            stockClickArea.style.left = `${stockPileX}px`;
+            stockClickArea.style.top = `${startY}px`;
+        }
+        stockLabel.style.left = `${stockPileX}px`;
+        stockLabel.style.top = `${startY + 150}px`;
+
+        discardPileEl.style.left = `${discardPileX}px`;
+        discardPileEl.style.top = `${startY}px`;
+        discardPileEl.style.right = 'auto';
+        discardLabel.style.left = `${discardPileX}px`;
+        discardLabel.style.top = `${startY + 150}px`;
+        
+        if (currentGameMode === 'jailbreak') {
+            const gridSpacing = 20;
+            const jokerCard = document.querySelector('.jail-joker');
+            if(jokerCard) {
+                jokerCard.style.left = `${(window.innerWidth / 2) - (cardWidth / 2)}px`;
+                jokerCard.style.top = `${(window.innerHeight / 2) - (cardHeight / 2)}px`;
+            }
+
+            const gridPositions = [
+                { id: 'corner-tl', offX: -1, offY: -1 }, { id: 'wall-top', offX: 0, offY: -1 }, { id: 'corner-tr', offX: 1, offY: -1 },
+                { id: 'wall-left', offX: -1, offY: 0 },  null, { id: 'wall-right', offX: 1, offY: 0 },
+                { id: 'corner-bl', offX: -1, offY: 1 }, { id: 'wall-bottom', offX: 0, offY: 1 }, { id: 'corner-br', offX: 1, offY: 1 }
+            ];
+            
+            gridPositions.forEach((pileInfo, i) => {
+                if(!pileInfo) return;
+                const cardsInPile = document.querySelectorAll(`.card[data-pile-id="${pileInfo.id}"]:not([data-discarded="true"])`);
+                const row = Math.floor(i / 3);
+                const col = i % 3;
+                
+                const pileX = (window.innerWidth / 2) - cardWidth / 2 + (col - 1) * (cardWidth + gridSpacing);
+                const pileY = (window.innerHeight / 2) - cardHeight / 2 + (row - 1) * (cardHeight + gridSpacing);
+
+                cardsInPile.forEach((card, j) => {
+                    card.style.transition = 'none';
+                    card.style.left = `${pileX + (j * PILE_STACK_OFFSET * pileInfo.offX)}px`;
+                    card.style.top = `${pileY + (j * PILE_STACK_OFFSET * pileInfo.offY)}px`;
+                });
+            });
+
+            const stockCards = Array.from(document.querySelectorAll('.card:not(.jail-joker):not([data-pile-id]):not([data-discarded="true"]):not([data-joker-stack])'))
+                .sort((a, b) => parseInt(a.style.zIndex || 0) - parseInt(b.style.zIndex || 0));
+            const baseZIndex = 10;
+            stockCards.forEach((card, index) => {
+                card.style.transition = 'none';
+                card.style.left = `${stockPileX}px`;
+                card.style.top = `${startY - index * STACK_OFFSET_Y}px`; 
+                card.style.zIndex = baseZIndex + index;
+            });
+        }
+        
+        setTimeout(() => {
+            document.querySelectorAll('.card').forEach(card => {
+                 card.style.transition = 'top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.3s ease';
+            });
+        }, 50);
+    }
+    
+    // --- Funções do UI ---
+    function showRulesModal() {
+        modalOverlay.classList.add('show');
+        rulesModal.classList.add('show');
+    }
+
+    function hideRulesModal() {
+        modalOverlay.classList.remove('show');
+        rulesModal.classList.remove('show');
+    }
+
+    function adjustTitleWidth() {
+        const jokerText = document.querySelector('.joker-text');
+        const jailbreakText = document.querySelector('.jailbreak-text');
+        if (jokerText && jailbreakText) {
+            // Usar um pequeno timeout para garantir que o DOM foi renderizado
+            setTimeout(() => {
+                const targetWidth = jokerText.getBoundingClientRect().width;
+                const currentWidth = jailbreakText.getBoundingClientRect().width;
+                if (currentWidth > 0) {
+                    const scaleX = targetWidth / currentWidth;
+                    jailbreakText.style.transform = `scaleX(${scaleX})`;
+                }
+            }, 100);
+        }
+    }
+
+    function adjustRemoveButtonSize() {
+        const scoreRect = scoreContainer.getBoundingClientRect();
+        if (scoreRect.width > 0) {
+            removeBtn.style.width = `${scoreRect.width}px`;
+            removeBtn.style.height = `${scoreRect.height}px`;
+        }
+    }
+
+    // --- Inicialização ---
+    shuffleBtn.addEventListener('click', shuffleOrRestart);
+    removeBtn.addEventListener('click', removeSelectedCards);
+    rulesBtn.addEventListener('click', showRulesModal);
+    closeRulesXBtn.addEventListener('click', hideRulesModal);
+    modalOverlay.addEventListener('click', hideRulesModal);
+    
+    window.addEventListener('resize', () => {
+        alignStaticPiles();
+        adjustTitleWidth();
+        adjustRemoveButtonSize();
+    });
+    
+    window.onload = () => {
+        initializeJokerJailbreak();
+        adjustTitleWidth();
+        adjustRemoveButtonSize();
+    };
+
+</script>
+
+
+</body></html>
